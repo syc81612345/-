@@ -609,12 +609,7 @@
         
         let aiParsedData = null;
 
-        generateBtn.addEventListener('click', async () => {
-            if (GAS_URL.includes("你的APPS_SCRIPT_ID")) {
-                await customAlert("請先在程式碼中的 const GAS_URL 填入您的 Google Apps Script /exec 網址！", "未設定後端網址");
-                return;
-            }
-
+generateBtn.addEventListener('click', async () => {
             const promptText = document.getElementById('curriculumPrompt').value.trim();
             const issues = getCheckedValues('issues').join('、');
             const weeksPerSemester = parseInt(document.getElementById('weeksPerSemester').value) || 21;
@@ -665,10 +660,10 @@
 ${promptText}`;
 
             try {
-                // 呼叫 Google Apps Script 中繼代理端點
-                const response = await fetch(GAS_URL, {
+                // 直接向同一站點底下的 Cloudflare Function 請求
+                const response = await fetch('/api/generate', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         prompt: userPrompt,
                         sysPrompt: sysPrompt
@@ -676,23 +671,25 @@ ${promptText}`;
                 });
 
                 if (!response.ok) {
-                    throw new Error(`伺服器回應錯誤 (狀態碼: ${response.status})`);
+                    throw new Error(`伺服器錯誤狀態碼: ${response.status}`);
                 }
                 
                 const result = await response.json();
+                
                 if (result.error) {
-                    throw new Error(result.error);
+                    const errDetail = typeof result.error === 'object' ? JSON.stringify(result.error) : result.error;
+                    throw new Error(errDetail);
                 }
 
                 const mdText = result.candidates?.[0]?.content?.parts?.[0]?.text;
-                
-                if (mdText) {
-                    parseAndRender(mdText);
-                    loaderContainer.classList.add('hidden');
-                    outputArea.classList.remove('hidden');
-                } else {
-                    throw new Error("無法解析回傳內容，請確認後端金鑰狀態是否正常。");
+                if (!mdText) {
+                    throw new Error("模型未回傳文字內容");
                 }
+
+                parseAndRender(mdText);
+                loaderContainer.classList.add('hidden');
+                outputArea.classList.remove('hidden');
+
             } catch (err) {
                 loaderContainer.classList.add('hidden');
                 errorContainer.innerText = `產生失敗：${err.message}`;
