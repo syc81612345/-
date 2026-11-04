@@ -9,7 +9,6 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Chiron+GoRound+TC:wght@200..900&display=swap" rel="stylesheet">
     <style>
-        /* 基礎樣式與過渡動畫 */
         body { 
             font-family: 'Chiron GoRound TC', 'Microsoft JhengHei', '微軟正黑體', 'PingFang TC', sans-serif; 
             transition: background-color 0.4s ease, color 0.3s ease;
@@ -61,7 +60,6 @@
             color: #1e293b; 
         }
 
-        /* 課綱檢索 Modal 樣式整合 */
         :root { 
             --primary-blue: #3b82f6; 
             --emerald-green: #10b981; 
@@ -111,7 +109,6 @@
             background: #94a3b8;
         }
 
-        /* 動畫效果 */
         @keyframes fadeIn {
             from { opacity: 0; transform: scale(0.95); }
             to { opacity: 1; transform: scale(1); }
@@ -120,7 +117,6 @@
             animation: fadeIn 0.2s ease-out forwards;
         }
 
-        /* 夢幻櫻花粉紅彩蛋主題 */
         body.pink-mode {
             background-color: #fdf2f8;
         }
@@ -152,11 +148,11 @@
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen py-6 md:py-10 relative">
-    <!-- 自訂對話框 (替代 alert 與 confirm) -->
+
     <div id="customDialog" class="hidden fixed inset-0 bg-slate-950/60 backdrop-blur-xs z-[100] flex items-center justify-center p-4">
         <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl p-6 border-t-8 border-indigo-600 animate-fade-in transition-all" id="dialogBorder">
             <h3 id="customDialogTitle" class="text-lg font-bold text-slate-900 mb-2">提示</h3>
-            <p id="customDialogMessage" class="text-slate-600 text-sm mb-6 whitespace-pre-line"></p>
+            <p id="customDialogMessage" class="text-slate-600 text-sm mb-6 whitespace-pre-line leading-relaxed"></p>
             <div class="flex justify-end gap-3">
                 <button id="customDialogCancel" class="hidden px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-lg text-sm transition">取消</button>
                 <button id="customDialogConfirm" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg text-sm transition shadow-sm">確認</button>
@@ -203,7 +199,6 @@
             </header>
 
             <main>
-                <!-- 區塊一：基本資料 -->
                 <section class="mb-8 border-b pb-6">
                     <h2 class="text-xl font-bold text-indigo-900 mb-4 flex items-center transition-colors">
                         <span class="bg-indigo-100 text-indigo-800 w-8 h-8 rounded-full inline-flex justify-center items-center mr-2 font-black transition-colors">1</span>
@@ -221,7 +216,6 @@
                     </div>
                 </section>
 
-                <!-- 區塊二：課程與班型 -->
                 <section class="mb-8 border-b pb-6">
                     <h2 class="text-xl font-bold text-indigo-900 mb-4 flex items-center transition-colors">
                         <span class="bg-indigo-100 text-indigo-800 w-8 h-8 rounded-full inline-flex justify-center items-center mr-2 font-black transition-colors">2</span>
@@ -247,7 +241,6 @@
                     </div>
                 </section>
 
-                <!-- 區塊三：計畫表設定勾選項 -->
                 <section class="mb-8 border-b pb-6">
                     <h2 class="text-xl font-bold text-indigo-900 mb-4 flex items-center transition-colors">
                         <span class="bg-indigo-100 text-indigo-800 w-8 h-8 rounded-full inline-flex justify-center items-center mr-2 font-black transition-colors">3</span>
@@ -255,7 +248,6 @@
                     </h2>
                     
                     <div class="space-y-4">
-                        <!-- 核心素養 -->
                         <div class="section-box">
                             <h3 class="font-bold text-slate-800 mb-3 border-b pb-1">核心素養</h3>
                             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
@@ -286,7 +278,6 @@
                             </div>
                         </div>
 
-                        <!-- 重大議題 -->
                         <div class="section-box">
                             <h3 class="font-bold text-slate-800 mb-2 border-b pb-1">重大議題 <span class="text-xs text-slate-400 font-normal">(AI 將根據勾選項目發想主題)</span></h3>
                             <div class="checkbox-grid-dense text-xs text-slate-600">
@@ -312,9 +303,7 @@
                             </div>
                         </div>
 
-                        <!-- 教學設定區塊 -->
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <!-- 1. 教材編輯與資源 -->
                             <div class="section-box flex flex-col justify-between">
                                 <div>
                                     <h3 class="font-bold text-slate-800 mb-2 text-sm border-b pb-1">1. 教材編輯與資源</h3>
@@ -331,7 +320,6 @@
                                 <input type="text" id="materialsOther" placeholder="自訂教材資源其他內容 (非必填)..." class="w-full mt-2 p-1.5 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-indigo-500 bg-white focus:outline-none">
                             </div>
                             
-                            <!-- 2. 教學方法 -->
                             <div class="section-box flex flex-col justify-between">
                                 <div>
                                     <h3 class="font-bold text-slate-800 mb-2 text-sm border-b pb-1">2. 教學方法</h3>
@@ -361,7 +349,6 @@
                                 <input type="text" id="methodsOther" placeholder="自訂教學方法其他內容 (非必填)..." class="w-full mt-2 p-1.5 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-indigo-500 bg-white focus:outline-none">
                             </div>
                             
-                            <!-- 3. 教學調整 -->
                             <div class="section-box flex flex-col justify-between">
                                 <div>
                                     <h3 class="font-bold text-slate-800 mb-2 text-sm border-b pb-1">3. 教學調整</h3>
@@ -380,7 +367,6 @@
                                 <input type="text" id="adjustmentsOther" placeholder="自訂教學調整其他內容 (非必填)..." class="w-full mt-2 p-1.5 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-indigo-500 bg-white focus:outline-none">
                             </div>
                             
-                            <!-- 4. 教學評量 -->
                             <div class="section-box flex flex-col justify-between">
                                 <div>
                                     <h3 class="font-bold text-slate-800 mb-2 text-sm border-b pb-1">4. 教學評量</h3>
@@ -401,7 +387,6 @@
                     </div>
                 </section>
 
-                <!-- 區塊四：內容構想與 AI 生成 -->
                 <section class="mb-8">
                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-2">
                         <h2 class="text-xl font-bold text-indigo-900 flex items-center transition-colors">
@@ -415,7 +400,6 @@
                     
                     <div class="flex flex-col">
                         <label class="font-semibold text-slate-700 mb-1 text-sm">請貼上相關課綱指標與您的教學構想：</label>
-                        <p class="text-xs text-slate-400 mb-2">您可以點擊上方按鈕直接勾選課綱，或在此貼上您想融入的內容。AI 將依此彙整出整體目標與每週進度。</p>
                         <textarea id="curriculumPrompt" rows="5" class="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm bg-white focus:outline-none transition-all" placeholder="例如：
 特社1-I-1 分辨與表達基本的正向或負向情緒
 特社A-Ⅰ-1 基本情緒的認識與分辨
@@ -429,7 +413,6 @@
                     </button>
                 </div>
 
-                <!-- 結果預覽區塊 -->
                 <div id="resultContainer" class="mt-8 hidden">
                     <div class="flex justify-center items-center mb-6 py-6" id="loaderContainer">
                         <div class="loader mr-4"></div>
@@ -455,7 +438,6 @@
                             </div>
                         </div>
                         
-                        <!-- AI 文字資料顯示區 -->
                         <div class="bg-slate-50 border border-slate-200 rounded-xl p-5 mb-6 text-sm">
                             <h4 class="font-bold text-indigo-800 mb-2 border-b pb-1">重大議題及學習主題</h4>
                             <div id="previewTheme" class="mb-4 text-slate-700 whitespace-pre-wrap leading-relaxed"></div>
@@ -470,7 +452,6 @@
                             <div id="previewObj" class="text-slate-700 whitespace-pre-wrap leading-relaxed"></div>
                         </div>
 
-                        <!-- 進度表顯示區 -->
                         <div id="tableRenderArea" class="w-full"></div>
                     </div>
                 </div>
@@ -478,11 +459,8 @@
         </div>
     </div>
 
-    <!-- 課綱檢索 Modal -->
     <div id="indicatorModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <div class="bg-white w-full max-w-[1200px] h-[90vh] md:h-[85vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden border-t-8 border-blue-500 animate-fade-in">
-            
-            <!-- Modal Header & 控制面板 -->
             <div class="bg-slate-50 p-4 border-b border-slate-200 flex-shrink-0">
                 <div class="flex justify-between items-center mb-3">
                     <h2 class="text-lg md:text-xl font-black text-slate-800 flex items-center gap-2">
@@ -492,7 +470,6 @@
                 </div>
 
                 <div class="grid grid-cols-1 lg:grid-cols-12 gap-3 items-center">
-                    <!-- 領域選擇 -->
                     <div class="lg:col-span-3">
                         <select id="filterDomain" class="w-full px-3 py-2 border border-slate-300 rounded-lg font-bold text-slate-700 focus:outline-none focus:border-blue-500 text-sm bg-white" onchange="updateStageOptions()">
                             <option value="社會技巧">社會技巧</option>
@@ -506,12 +483,10 @@
                             <option value="輔助科技應用">輔助科技應用</option>
                         </select>
                     </div>
-                    <!-- 階段選擇 -->
                     <div class="lg:col-span-4">
                         <select id="filterStage" class="w-full px-3 py-2 border border-slate-300 rounded-lg font-bold text-slate-700 focus:outline-none focus:border-blue-500 text-sm bg-white" onchange="renderIndicators()">
                         </select>
                     </div>
-                    <!-- 關鍵字過濾 -->
                     <div class="lg:col-span-5 relative">
                         <input type="text" id="keywordSearch" oninput="renderIndicators()" placeholder="輸入關鍵字篩選... (如：情緒、專注)" class="w-full pl-8 pr-3 py-2 border border-slate-300 rounded-lg font-bold text-sm focus:outline-none focus:border-blue-500 bg-white">
                         <span class="absolute left-2.5 top-2.5 text-slate-400 text-sm">🔍</span>
@@ -519,9 +494,7 @@
                 </div>
             </div>
 
-            <!-- Modal Body：雙欄展示 -->
             <div class="flex-grow overflow-hidden flex flex-col lg:flex-row">
-                <!-- 左側：課綱指標瀏覽 -->
                 <div class="w-full lg:w-2/3 p-4 flex flex-col md:flex-row gap-4 h-1/2 lg:h-full border-b lg:border-b-0 lg:border-r border-slate-200">
                     <div class="flex-1 flex flex-col overflow-hidden">
                         <div class="bg-blue-500 text-white px-3 py-2 rounded-t-lg font-bold text-sm flex justify-between items-center">
@@ -538,7 +511,6 @@
                     </div>
                 </div>
 
-                <!-- 右側：指標收集箱 -->
                 <div class="w-full lg:w-1/3 p-4 flex flex-col bg-slate-50/50 h-1/2 lg:h-full">
                     <div class="flex justify-between items-center mb-2">
                         <h3 class="text-base font-black text-slate-700 flex items-center gap-1">🛒 收集箱</h3>
@@ -565,51 +537,34 @@
         </div>
     </div>
     
-    <!-- Modal 專用 Toast -->
     <div id="toast" class="hidden fixed bottom-10 left-1/2 transform -translate-x-1/2 bg-slate-800/95 backdrop-blur-sm text-white px-6 py-3 rounded-full shadow-2xl z-[60] font-bold text-sm transition-all duration-300 opacity-0"></div>
 
     <script>
-        // ==========================================
-        // 🔒 在此填入您的 Gemini API Key
-        // ==========================================
-        const apiKey = "AQ.Ab8RN6JS3WeyvUlwKHokXbPwZ3h-b5rgBbWBB5EQYCrjU6C0aA"; // 請將從 Google AI Studio 複製的 AIzaSy... 貼在雙引號中
+        const apiKey = "AQ.Ab8RN6I32Em_-hpCJi9wOxC8MUQ_go8WgwQ4id02F2gy6TpPWA";
 
-        // 自訂對話框
         function customAlert(message, title = "提示") {
             return new Promise((resolve) => {
                 const dialog = document.getElementById('customDialog');
-                const dTitle = document.getElementById('customDialogTitle');
-                const dMsg = document.getElementById('customDialogMessage');
-                const dCancel = document.getElementById('customDialogCancel');
-                const dConfirm = document.getElementById('customDialogConfirm');
-
-                dTitle.innerText = title;
-                dMsg.innerText = message;
-                dCancel.classList.add('hidden');
-
+                document.getElementById('customDialogTitle').innerText = title;
+                document.getElementById('customDialogMessage').innerText = message;
+                document.getElementById('customDialogCancel').classList.add('hidden');
                 dialog.classList.remove('hidden');
 
                 const handleConfirm = () => {
                     dialog.classList.add('hidden');
-                    dConfirm.removeEventListener('click', handleConfirm);
+                    document.getElementById('customDialogConfirm').removeEventListener('click', handleConfirm);
                     resolve(true);
                 };
-                dConfirm.addEventListener('click', handleConfirm);
+                document.getElementById('customDialogConfirm').addEventListener('click', handleConfirm);
             });
         }
 
         function customConfirm(message, title = "確認動作") {
             return new Promise((resolve) => {
                 const dialog = document.getElementById('customDialog');
-                const dTitle = document.getElementById('customDialogTitle');
-                const dMsg = document.getElementById('customDialogMessage');
-                const dCancel = document.getElementById('customDialogCancel');
-                const dConfirm = document.getElementById('customDialogConfirm');
-
-                dTitle.innerText = title;
-                dMsg.innerText = message;
-                dCancel.classList.remove('hidden');
-
+                document.getElementById('customDialogTitle').innerText = title;
+                document.getElementById('customDialogMessage').innerText = message;
+                document.getElementById('customDialogCancel').classList.remove('hidden');
                 dialog.classList.remove('hidden');
 
                 const handleConfirm = () => {
@@ -624,12 +579,12 @@
                 };
 
                 function cleanup() {
-                    dConfirm.removeEventListener('click', handleConfirm);
-                    dCancel.removeEventListener('click', handleCancel);
+                    document.getElementById('customDialogConfirm').removeEventListener('click', handleConfirm);
+                    document.getElementById('customDialogCancel').removeEventListener('click', handleCancel);
                 }
 
-                dConfirm.addEventListener('click', handleConfirm);
-                dCancel.addEventListener('click', handleCancel);
+                document.getElementById('customDialogConfirm').addEventListener('click', handleConfirm);
+                document.getElementById('customDialogCancel').addEventListener('click', handleCancel);
             });
         }
 
@@ -669,7 +624,7 @@
 
         generateBtn.addEventListener('click', async () => {
             if (!apiKey) {
-                await customAlert("請先在程式碼中的 const apiKey = \"\"; 填入您的 Google Gemini API Key！", "未設定 API Key");
+                await customAlert("請先在程式碼中的 const apiKey = \"\"; 填入您的金鑰！", "未設定 API Key");
                 return;
             }
 
@@ -689,7 +644,7 @@
             generateBtn.disabled = true;
             generateBtn.classList.add('opacity-50');
 
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash:generateContent?key=${apiKey}`;
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent`;
 
             const sysPrompt = `你是一位台灣資深特教老師。請根據使用者提供的設定，產出符合格式的「特殊需求領域教學計畫」。
 請嚴格遵守以下 Markdown 格式輸出，絕對不要有任何多餘的對話、前言或結語：
@@ -732,12 +687,17 @@ ${promptText}`;
 
                 const response = await fetchWithBackoff(apiUrl, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${apiKey}`
+                    },
                     body: JSON.stringify(payload)
                 });
 
                 if (!response.ok) {
-                    if (response.status === 403) throw new Error("403 金鑰無效，請確認填入的 API Key 是否正確[cite: 4]");
+                    if (response.status === 401) throw new Error("401 未授權，請確認 AQ. 金鑰是否正確");
+                    if (response.status === 403) throw new Error("403 權限不足[cite: 4]");
+                    if (response.status === 404) throw new Error("404 模型路徑錯誤");
                     throw new Error(`API 請求失敗 (狀態碼: ${response.status})`);
                 }
                 
@@ -887,9 +847,6 @@ ${promptText}`;
             document.body.removeChild(textarea);
         });
 
-        // =========================================================================
-        // 🌟 匯出符合南投縣 9 欄標準公版規範的 Word 表格
-        // =========================================================================
         document.getElementById('exportWordBtn').addEventListener('click', exportToWord);
 
         async function exportToWord() {
@@ -1307,7 +1264,7 @@ ${promptText}`;
             "生活管理": {
                 "初階": {
                     performance: p(`特生1-sP-1 覺察及表達如廁需求。 特生1-sP-2 使用適當的餐具進食。 特生1-sP-3 食用前進行洗滌、剝皮或打開包裝等。 特生1-sP-4 表現合宜的用餐禮儀與協助餐後整理。 特生1-sP-5 選擇乾淨新鮮且於保存期限內的食物。 特生1-sP-6 自我檢視並控制飲食行為和習慣。 特生1-sP-7 表達穿著衣物的不適感並請求更換。 特生1-sP-8 維持衣著整潔，並每日換洗貼身衣物。 特生1-sP-9 選擇適當場所並完成衣物穿脫與更換。 特生1-sP-10 視天氣、場合、年齡、個人喜好，選擇適合的衣著。 特生1-sP-11 分類衣物並收納保管。 特生1-sP-12 覺察及表達如廁需求。 特生2-sP-1 妥善保管個人財物並避免遺失。 特生2-sP-2 建立簡單的儲蓄行為。 特生2-sP-3 使用物品時表現節約與珍惜資源的態度和行為。 特生3-sP-1 獨立行動的能力。 特生3-sP-2 認識社區環境與資源。`),
-                    content: p(`特生A-sP-1 飲食需求的表達。 特生A-sP-2 進食技巧。 特生A-sP-3 餐具的辨認與選擇。 特生B-sP-1 衣物穿脫技巧。 特生B-sP-2 衣物的認識。 特生B-sP-3 衣物的清潔與收納。 特生C-sP-1 如廁技巧。 特生C-sP-2 如廁禮儀。 特生D-sP-1 身體器官與功能的認識。 特生E-sP-1 日常財物的使用與保管。 特生E-sP-2 金錢的概念。 特生F-sP-1 環境衛生的觀念。`)
+                    content: p(`特生A-sP-1 飲食需求的表達。 特生A-sP-2 進食技巧。 特生A-sP-3 餐具的辨認與選擇。 特生B-sP-1 衣物穿脫技巧。 特生B-sP-2 衣物的認識。 特生B-sP-3 衣物的清潔與收納. 特生C-sP-1 如廁技巧。 特生C-sP-2 如廁禮儀。 特生D-sP-1 身體器官與功能的認識。 特生E-sP-1 日常財物的使用與保管。 特生E-sP-2 金錢的概念。 特生F-sP-1 環境衛生的觀念。`)
                 },
                 "進階": {
                     performance: p(`特生1-sA-1 烹調用具使用前後能清洗潔淨。 特生1-sA-2 使用適當方式加熱、沖泡、烹調簡易餐食。 特生1-sA-3 選擇適宜的用餐場所與安全的飲食行為。 特生1-sA-5 選購適合自己的衣物。 特生1-sA-6 使用適當方式洗濯及晾曬衣物。 特生1-sA-7 整理及收納個人衣物。 特生1-sA-9 適時修剪指甲與頭髮。 特生2-sA-1 具備儲蓄、使用塑膠貨幣及行動支付的技能。 特生2-sA-2 規劃日常生活的費用及收支管理事宜。 特生2-sA-3 落實資源回收與再利用。 特生3-sA-1 能處理自身所遇的意外事件。 特生3-sA-2 依需求善用社區資源。`),
@@ -1358,7 +1315,7 @@ ${promptText}`;
             },
             "輔助科技應用": {
                 "不分階段": {
-                    performance: p(`特輔1-1 了解所需使用輔具的功能。 特輔1-2 認識所需使用輔具的構造。 特輔2-1 正向看待輔具的使用。 特輔2-2 選擇適宜需求的輔具。 特輔3-1 在協助下操作所使用的輔具。 特輔3-2 獨立操作所使用的輔具。 特輔4-1 維護所使用輔具的功能。`),
+                    performance: p(`特輔1-1 了解所需使用輔具的功能。 特輔1-2 認識所需使用輔具的構造。 特輔2-1 正向看待輔具的使用。 特輔2-2 選擇適宜需求的輔具. 特輔3-1 在協助下操作所使用的輔具。 特輔3-2 獨立操作所使用的輔具。 特輔4-1 維護所使用輔具的功能。`),
                     content: p(`特輔A-1 放大鏡功能與操作。 特輔A-2 望遠鏡功能與操作。 特輔A-3 擴視機功能與操作。 特輔B-1 助聽器功能與操作。 特輔B-2 人工電子耳功能與操作。 特輔C-1 柺杖功能與操作。 特輔C-2 助行器功能與操作。 特輔D-1 有聲書功能與操作。 特輔E-1 溝通圖卡功能與操作。 特輔F-1 替代性鍵盤或滑鼠功能與操作。`)
                 }
             },
