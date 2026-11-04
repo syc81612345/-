@@ -1,0 +1,1643 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>南投特殊需求課程計畫產生器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Chiron+GoRound+TC:wght@200..900&display=swap" rel="stylesheet">
+    <style>
+        /* 基礎樣式與過渡動畫 */
+        body { 
+            font-family: 'Chiron GoRound TC', 'Microsoft JhengHei', '微軟正黑體', 'PingFang TC', sans-serif; 
+            transition: background-color 0.4s ease, color 0.3s ease;
+        }
+        .loader {
+            border: 4px solid #f3f3f3; 
+            border-top: 4px solid #4f46e5; 
+            border-radius: 50%;
+            width: 30px; 
+            height: 30px; 
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 
+            0% { transform: rotate(0deg); } 
+            100% { transform: rotate(360deg); } 
+        }
+        
+        .section-box { 
+            border: 1px solid #e2e8f0; 
+            border-radius: 0.75rem; 
+            padding: 1.25rem; 
+            background-color: #f8fafc; 
+            margin-bottom: 1.25rem;
+            transition: all 0.2s ease-in-out;
+        }
+        .section-box:hover {
+            border-color: #cbd5e1;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+        .checkbox-grid-dense { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); 
+            gap: 0.35rem; 
+        }
+        .output-table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            text-align: left; 
+            font-size: 0.875rem; 
+        }
+        .output-table th, .output-table td { 
+            border: 1px solid #cbd5e1; 
+            padding: 0.75rem; 
+            vertical-align: top; 
+        }
+        .output-table th { 
+            background-color: #f1f5f9; 
+            font-weight: 700; 
+            color: #1e293b; 
+        }
+
+        /* 課綱檢索 Modal 樣式整合 */
+        :root { 
+            --primary-blue: #3b82f6; 
+            --emerald-green: #10b981; 
+        }
+        .curriculum-card {
+            background: #FFFFFF; 
+            border: 1px solid #E2E8F0; 
+            border-radius: 12px;
+            padding: 12px; 
+            margin-bottom: 8px; 
+            display: flex; 
+            gap: 12px; 
+            align-items: flex-start;
+            transition: all 0.2s ease; 
+            cursor: pointer;
+        }
+        .curriculum-card:hover { 
+            border-color: var(--primary-blue); 
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.08); 
+            transform: translateY(-1px); 
+        }
+        .curriculum-card input[type="checkbox"] { 
+            width: 18px; 
+            height: 18px; 
+            margin-top: 3px; 
+            cursor: pointer; 
+            accent-color: var(--primary-blue); 
+        }
+        .highlight { 
+            background-color: #fef08a; 
+            color: #1e293b; 
+            padding: 0 2px; 
+            border-radius: 2px; 
+            font-weight: bold; 
+        }
+        .custom-scrollbar::-webkit-scrollbar { 
+            width: 6px; 
+        }
+        .custom-scrollbar::-webkit-scrollbar-track { 
+            background: #f1f5f9; 
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb { 
+            background: #cbd5e1; 
+            border-radius: 3px; 
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { 
+            background: #94a3b8;
+        }
+
+        /* 動畫效果 */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.2s ease-out forwards;
+        }
+
+        /* 夢幻櫻花粉紅彩蛋主題 */
+        body.pink-mode {
+            background-color: #fdf2f8;
+        }
+        .pink-mode .text-indigo-950 {
+            color: #831843;
+        }
+        .pink-mode .text-indigo-900 {
+            color: #9d174d;
+        }
+        .pink-mode .bg-indigo-600 {
+            background-color: #db2777;
+        }
+        .pink-mode .bg-indigo-600:hover {
+            background-color: #be185d;
+        }
+        .pink-mode .bg-indigo-100 {
+            background-color: #fce7f3;
+        }
+        .pink-mode .text-indigo-800 {
+            color: #9d174d;
+        }
+        .pink-mode .border-indigo-600 {
+            border-color: #db2777;
+        }
+        .pink-mode .focus\:ring-indigo-500:focus {
+            --tw-ring-color: #ec4899;
+            border-color: #ec4899;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen py-6 md:py-10 relative">
+    <!-- 自訂對話框 (替代 alert 與 confirm) -->
+    <div id="customDialog" class="hidden fixed inset-0 bg-slate-950/60 backdrop-blur-xs z-[100] flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl p-6 border-t-8 border-indigo-600 animate-fade-in transition-all" id="dialogBorder">
+            <h3 id="customDialogTitle" class="text-lg font-bold text-slate-900 mb-2">提示</h3>
+            <p id="customDialogMessage" class="text-slate-600 text-sm mb-6 whitespace-pre-line"></p>
+            <div class="flex justify-end gap-3">
+                <button id="customDialogCancel" class="hidden px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-lg text-sm transition">取消</button>
+                <button id="customDialogConfirm" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg text-sm transition shadow-sm">確認</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container mx-auto p-4 md:p-8 max-w-6xl">
+        <div class="bg-white rounded-3xl shadow-xl p-6 md:p-10 border border-slate-100">
+            <header class="text-center mb-8">
+                <h1 class="text-3xl md:text-4xl font-black text-indigo-950 flex items-center justify-center gap-3 flex-wrap transition-colors">
+                    <span id="kittyIcon" class="relative inline-block cursor-pointer active:scale-90 transition-all duration-300 select-none hover:drop-shadow-[0_4px_8px_rgba(239,68,68,0.25)]">
+                        <svg class="w-12 h-12 inline-block transition-transform hover:rotate-12 duration-200" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <ellipse cx="50" cy="55" rx="36" ry="28" fill="white" stroke="#1e293b" stroke-width="4.5"/>
+                            <path d="M22 36 C 14 14, 30 12, 34 32" fill="white" stroke="#1e293b" stroke-width="4.5" stroke-linejoin="round"/>
+                            <path d="M78 36 C 86 14, 70 12, 66 32" fill="white" stroke="#1e293b" stroke-width="4.5" stroke-linejoin="round"/>
+                            <ellipse cx="36" cy="53" rx="3.5" ry="5.5" fill="#1e293b"/>
+                            <ellipse cx="64" cy="53" rx="3.5" ry="5.5" fill="#1e293b"/>
+                            <ellipse cx="50" cy="61" rx="4.5" ry="3.5" fill="#fbbf24"/>
+                            <line x1="18" y1="52" x2="6" y2="50" stroke="#1e293b" stroke-width="3.5" stroke-linecap="round"/>
+                            <line x1="16" y1="58" x2="4" y2="58" stroke="#1e293b" stroke-width="3.5" stroke-linecap="round"/>
+                            <line x1="18" y1="64" x2="8" y2="66" stroke="#1e293b" stroke-width="3.5" stroke-linecap="round"/>
+                            <line x1="82" y1="52" x2="94" y2="50" stroke="#1e293b" stroke-width="3.5" stroke-linecap="round"/>
+                            <line x1="84" y1="58" x2="96" y2="58" stroke="#1e293b" stroke-width="3.5" stroke-linecap="round"/>
+                            <line x1="82" y1="64" x2="92" y2="66" stroke="#1e293b" stroke-width="3.5" stroke-linecap="round"/>
+                            <g transform="translate(14, 14)">
+                                <path d="M12 12 C 2 2, 2 22, 12 12" fill="#ef4444" stroke="#1e293b" stroke-width="3.5" stroke-linejoin="round"/>
+                                <path d="M12 12 C 22 2, 22 22, 12 12" fill="#ef4444" stroke="#1e293b" stroke-width="3.5" stroke-linejoin="round"/>
+                                <circle cx="12" cy="12" r="5" fill="#ef4444" stroke="#1e293b" stroke-width="3.5"/>
+                            </g>
+                        </svg>
+                    </span>
+                    <span id="headerTitle">南投特殊需求課程計畫產生器</span>
+                </h1>
+                <p class="text-slate-500 mt-2 text-sm md:text-base">根據新版特教領域計畫表範本，結合 AI 一鍵產出單元目標與週次規劃，完美對應 Word 格式。</p>
+                <div class="mt-4 flex flex-wrap justify-center gap-3">
+                    <button id="fillExampleBtn" class="bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white font-semibold py-2 px-5 rounded-xl shadow-md hover:shadow-lg transition text-sm flex items-center justify-center gap-1">
+                        <span>💡</span> 一鍵填入範例資料 (社會技巧)
+                    </button>
+                    <button id="clearFormBtn" class="bg-slate-500 hover:bg-slate-600 active:scale-95 text-white font-semibold py-2 px-5 rounded-xl shadow-md hover:shadow-lg transition text-sm flex items-center justify-center gap-1">
+                        <span>🧹</span> 清空重設表單
+                    </button>
+                </div>
+            </header>
+
+            <main>
+                <!-- 區塊一：基本資料 -->
+                <section class="mb-8 border-b pb-6">
+                    <h2 class="text-xl font-bold text-indigo-900 mb-4 flex items-center transition-colors">
+                        <span class="bg-indigo-100 text-indigo-800 w-8 h-8 rounded-full inline-flex justify-center items-center mr-2 font-black transition-colors">1</span>
+                        基本資料與學期設定
+                    </h2>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                        <div><label class="block text-xs font-semibold text-slate-500 mb-1">縣市</label><input type="text" id="county" placeholder="例如：南投縣南投市" class="w-full p-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm focus:outline-none"></div>
+                        <div><label class="block text-xs font-semibold text-slate-500 mb-1">學校名稱</label><input type="text" id="schoolName" placeholder="例如：新豐國民小學" class="w-full p-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm focus:outline-none"></div>
+                        <div><label class="block text-xs font-semibold text-slate-500 mb-1">學年度</label><input type="text" id="schoolYear" placeholder="例如：115" class="w-full p-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm focus:outline-none"></div>
+                        <div><label class="block text-xs font-semibold text-slate-500 mb-1">教學者 (您的姓名)</label><input type="text" id="teacherName" placeholder="例如：蘇雍程" class="w-full p-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm focus:outline-none"></div>
+                        <div><label class="block text-xs font-semibold text-slate-500 mb-1">組別名稱</label><input type="text" id="groupName" placeholder="例如：特A組" class="w-full p-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm focus:outline-none"></div>
+                        <div><label class="block text-xs font-semibold text-slate-500 mb-1">教學人數</label><input type="number" id="studentCount" placeholder="例如：2" class="w-full p-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm focus:outline-none" min="1"></div>
+                        <div><label class="block text-xs font-semibold text-slate-500 mb-1">每學期週數</label><input type="number" id="weeksPerSemester" value="21" class="w-full p-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm focus:outline-none" min="1" max="50"></div>
+                        <div><label class="block text-xs font-semibold text-slate-500 mb-1">每週節數</label><input type="number" id="weeklyPeriods" value="1" class="w-full p-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm focus:outline-none" min="1" max="40"></div>
+                    </div>
+                </section>
+
+                <!-- 區塊二：課程與班型 -->
+                <section class="mb-8 border-b pb-6">
+                    <h2 class="text-xl font-bold text-indigo-900 mb-4 flex items-center transition-colors">
+                        <span class="bg-indigo-100 text-indigo-800 w-8 h-8 rounded-full inline-flex justify-center items-center mr-2 font-black transition-colors">2</span>
+                        領域與實施班型
+                    </h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-500 mb-1">領域名稱</label>
+                            <input type="text" id="domainName" value="特殊需求領域（社會技巧）" placeholder="填寫完整領域名稱" class="w-full p-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm focus:outline-none">
+                            <p class="text-xs text-slate-400 mt-1">例如：特殊需求領域（生活管理）、國語文...</p>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-500 mb-1">班型名稱</label>
+                            <select id="classType" class="w-full p-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm bg-white focus:outline-none">
+                                <option value="分散式資源班">分散式資源班</option>
+                                <option value="集中式特教班">集中式特教班</option>
+                                <option value="巡迴輔導班">巡迴輔導班</option>
+                                <option value="在家教育班">在家教育班</option>
+                                <option value="普通班接受特殊教育服務">普通班接受特殊教育服務</option>
+                                <option value="資優資源班">資優資源班</option>
+                            </select>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 區塊三：計畫表設定勾選項 -->
+                <section class="mb-8 border-b pb-6">
+                    <h2 class="text-xl font-bold text-indigo-900 mb-4 flex items-center transition-colors">
+                        <span class="bg-indigo-100 text-indigo-800 w-8 h-8 rounded-full inline-flex justify-center items-center mr-2 font-black transition-colors">3</span>
+                        課程綱要與教學設定 (勾選與自訂)
+                    </h2>
+                    
+                    <div class="space-y-4">
+                        <!-- 核心素養 -->
+                        <div class="section-box">
+                            <h3 class="font-bold text-slate-800 mb-3 border-b pb-1">核心素養</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                                <div>
+                                    <span class="font-bold text-indigo-800 transition-colors">A自主行動</span>
+                                    <div class="ml-1 flex flex-col gap-1.5 mt-2 text-xs text-slate-600">
+                                        <label class="flex items-start gap-1 cursor-pointer"><input type="checkbox" name="coreComp" value="A1.身心素質與自我精進" class="mt-0.5 w-4 h-4 cursor-pointer"> A1.身心素質與自我精進</label>
+                                        <label class="flex items-start gap-1 cursor-pointer"><input type="checkbox" name="coreComp" value="A2.系統思考與問題解決" class="mt-0.5 w-4 h-4 cursor-pointer"> A2.系統思考與問題解決</label>
+                                        <label class="flex items-start gap-1 cursor-pointer"><input type="checkbox" name="coreComp" value="A3.規劃執行與創新應變" class="mt-0.5 w-4 h-4 cursor-pointer"> A3.規劃執行與創新應變</label>
+                                    </div>
+                                </div>
+                                <div>
+                                    <span class="font-bold text-indigo-800 transition-colors">B溝通互動</span>
+                                    <div class="ml-1 flex flex-col gap-1.5 mt-2 text-xs text-slate-600">
+                                        <label class="flex items-start gap-1 cursor-pointer"><input type="checkbox" name="coreComp" value="B1.符號運用與溝通表達" class="mt-0.5 w-4 h-4 cursor-pointer"> B1.符號運用與溝通表達</label>
+                                        <label class="flex items-start gap-1 cursor-pointer"><input type="checkbox" name="coreComp" value="B2.科技資訊與媒體素養" class="mt-0.5 w-4 h-4 cursor-pointer"> B2.科技資訊與媒體素養</label>
+                                        <label class="flex items-start gap-1 cursor-pointer"><input type="checkbox" name="coreComp" value="B3.藝術涵養與美感素養" class="mt-0.5 w-4 h-4 cursor-pointer"> B3.藝術涵養與美感素養</label>
+                                    </div>
+                                </div>
+                                <div>
+                                    <span class="font-bold text-indigo-800 transition-colors">C社會參與</span>
+                                    <div class="ml-1 flex flex-col gap-1.5 mt-2 text-xs text-slate-600">
+                                        <label class="flex items-start gap-1 cursor-pointer"><input type="checkbox" name="coreComp" value="C1.道德實踐與公民意識" class="mt-0.5 w-4 h-4 cursor-pointer"> C1.道德實踐與公民意識</label>
+                                        <label class="flex items-start gap-1 cursor-pointer"><input type="checkbox" name="coreComp" value="C2.人際關係與團隊合作" class="mt-0.5 w-4 h-4 cursor-pointer"> C2.人際關係與團隊合作</label>
+                                        <label class="flex items-start gap-1 cursor-pointer"><input type="checkbox" name="coreComp" value="C3.多元文化與國際理解" class="mt-0.5 w-4 h-4 cursor-pointer"> C3.多元文化與國際理解</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 重大議題 -->
+                        <div class="section-box">
+                            <h3 class="font-bold text-slate-800 mb-2 border-b pb-1">重大議題 <span class="text-xs text-slate-400 font-normal">(AI 將根據勾選項目發想主題)</span></h3>
+                            <div class="checkbox-grid-dense text-xs text-slate-600">
+                                <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" name="issues" value="人權教育" class="w-4 h-4 cursor-pointer"> 人權教育</label>
+                                <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" name="issues" value="環境教育" class="w-4 h-4 cursor-pointer"> 環境教育</label>
+                                <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" name="issues" value="海洋教育" class="w-4 h-4 cursor-pointer"> 海洋教育</label>
+                                <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" name="issues" value="品德教育" class="w-4 h-4 cursor-pointer"> 品德教育</label>
+                                <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" name="issues" value="生命教育" class="w-4 h-4 cursor-pointer"> 生命教育</label>
+                                <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" name="issues" value="法治教育" class="w-4 h-4 cursor-pointer"> 法治教育</label>
+                                <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" name="issues" value="科技教育" class="w-4 h-4 cursor-pointer"> 科技教育</label>
+                                <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" name="issues" value="資訊教育" class="w-4 h-4 cursor-pointer"> 資訊教育</label>
+                                <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" name="issues" value="能源教育" class="w-4 h-4 cursor-pointer"> 能源教育</label>
+                                <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" name="issues" value="安全教育" class="w-4 h-4 cursor-pointer"> 安全教育</label>
+                                <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" name="issues" value="防災教育" class="w-4 h-4 cursor-pointer"> 防災教育</label>
+                                <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" name="issues" value="家庭教育" class="w-4 h-4 cursor-pointer"> 家庭教育</label>
+                                <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" name="issues" value="閱讀素養" class="w-4 h-4 cursor-pointer"> 閱讀素養</label>
+                                <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" name="issues" value="戶外教育" class="w-4 h-4 cursor-pointer"> 戶外教育</label>
+                                <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" name="issues" value="國際教育" class="w-4 h-4 cursor-pointer"> 國際教育</label>
+                                <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" name="issues" value="生涯規劃教育" class="w-4 h-4 cursor-pointer"> 生涯規劃教育</label>
+                                <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" name="issues" value="多元文化教育" class="w-4 h-4 cursor-pointer"> 多元文化教育</label>
+                                <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" name="issues" value="原住民族教育" class="w-4 h-4 cursor-pointer"> 原住民族教育</label>
+                                <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" name="issues" value="性別平等教育" class="w-4 h-4 cursor-pointer"> 性別平等教育</label>
+                            </div>
+                        </div>
+
+                        <!-- 教學設定區塊 -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <!-- 1. 教材編輯與資源 -->
+                            <div class="section-box flex flex-col justify-between">
+                                <div>
+                                    <h3 class="font-bold text-slate-800 mb-2 text-sm border-b pb-1">1. 教材編輯與資源</h3>
+                                    <div class="checkbox-grid-dense text-xs text-slate-600 mb-2">
+                                        <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" name="materials" value="圖書繪本" class="w-4 h-4 cursor-pointer"> 圖書繪本</label>
+                                        <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" name="materials" value="學術研究" class="w-4 h-4 cursor-pointer"> 學術研究</label>
+                                        <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" name="materials" value="報章雜誌" class="w-4 h-4 cursor-pointer"> 報章雜誌</label>
+                                        <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" name="materials" value="影片資源" class="w-4 h-4 cursor-pointer"> 影片資源</label>
+                                        <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" name="materials" value="網路" class="w-4 h-4 cursor-pointer"> 網路</label>
+                                        <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" name="materials" value="新聞" class="w-4 h-4 cursor-pointer"> 新聞</label>
+                                        <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" name="materials" value="自編教材" class="w-4 h-4 cursor-pointer"> 自編教材</label>
+                                    </div>
+                                </div>
+                                <input type="text" id="materialsOther" placeholder="自訂教材資源其他內容 (非必填)..." class="w-full mt-2 p-1.5 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-indigo-500 bg-white focus:outline-none">
+                            </div>
+                            
+                            <!-- 2. 教學方法 -->
+                            <div class="section-box flex flex-col justify-between">
+                                <div>
+                                    <h3 class="font-bold text-slate-800 mb-2 text-sm border-b pb-1">2. 教學方法</h3>
+                                    <div class="checkbox-grid-dense text-xs text-slate-600 max-h-32 overflow-y-auto custom-scrollbar mb-2 pr-1">
+                                        <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" name="methods" value="直接教學法" class="w-4 h-4 cursor-pointer"> 直接教學法</label>
+                                        <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" name="methods" value="工作分析教學法" class="w-4 h-4 cursor-pointer"> 工作分析</label>
+                                        <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" name="methods" value="多層次教學法" class="w-4 h-4 cursor-pointer"> 多層次</label>
+                                        <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" name="methods" value="結構式教學法" class="w-4 h-4 cursor-pointer"> 結構式</label>
+                                        <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" name="methods" value="交互教學法" class="w-4 h-4 cursor-pointer"> 交互教學</label>
+                                        <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" name="methods" value="圖片交換系統" class="w-4 h-4 cursor-pointer"> 圖片交換</label>
+                                        <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" name="methods" value="識字教學法" class="w-4 h-4 cursor-pointer"> 識字教學</label>
+                                        <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" name="methods" value="社會故事教學法" class="w-4 h-4 cursor-pointer"> 社會故事</label>
+                                        <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" name="methods" value="講述法" class="w-4 h-4 cursor-pointer"> 講述法</label>
+                                        <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" name="methods" value="討論法" class="w-4 h-4 cursor-pointer"> 討論法</label>
+                                        <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" name="methods" value="觀察法" class="w-4 h-4 cursor-pointer"> 觀察法</label>
+                                        <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" name="methods" value="問思教學法" class="w-4 h-4 cursor-pointer"> 問思教學</label>
+                                        <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" name="methods" value="發表法" class="w-4 h-4 cursor-pointer"> 發表法</label>
+                                        <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" name="methods" value="自學輔導法" class="w-4 h-4 cursor-pointer"> 自學輔導</label>
+                                        <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" name="methods" value="探究教學法" class="w-4 h-4 cursor-pointer"> 探究教學</label>
+                                        <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" name="methods" value="編序教學法" class="w-4 h-4 cursor-pointer"> 編序教學</label>
+                                        <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" name="methods" value="合作學習法" class="w-4 h-4 cursor-pointer"> 合作學習</label>
+                                        <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" name="methods" value="價值澄清法" class="w-4 h-4 cursor-pointer"> 價值澄清</label>
+                                        <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" name="methods" value="角色扮演法" class="w-4 h-4 cursor-pointer"> 角色扮演</label>
+                                        <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" name="methods" value="問題解決教學法" class="w-4 h-4 cursor-pointer"> 問題解決</label>
+                                    </div>
+                                </div>
+                                <input type="text" id="methodsOther" placeholder="自訂教學方法其他內容 (非必填)..." class="w-full mt-2 p-1.5 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-indigo-500 bg-white focus:outline-none">
+                            </div>
+                            
+                            <!-- 3. 教學調整 -->
+                            <div class="section-box flex flex-col justify-between">
+                                <div>
+                                    <h3 class="font-bold text-slate-800 mb-2 text-sm border-b pb-1">3. 教學調整</h3>
+                                    <div class="checkbox-grid-dense text-xs text-slate-600 mb-2">
+                                        <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" name="adjustments" value="簡化" class="w-4 h-4 cursor-pointer"> 簡化</label>
+                                        <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" name="adjustments" value="減量" class="w-4 h-4 cursor-pointer"> 減量</label>
+                                        <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" name="adjustments" value="分解" class="w-4 h-4 cursor-pointer"> 分解</label>
+                                        <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" name="adjustments" value="替代" class="w-4 h-4 cursor-pointer"> 替代</label>
+                                        <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" name="adjustments" value="重整" class="w-4 h-4 cursor-pointer"> 重整</label>
+                                        <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" name="adjustments" value="加深" class="w-4 h-4 cursor-pointer"> 加深</label>
+                                        <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" name="adjustments" value="加廣" class="w-4 h-4 cursor-pointer"> 加廣</label>
+                                        <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" name="adjustments" value="加速" class="w-4 h-4 cursor-pointer"> 加速</label>
+                                        <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" name="adjustments" value="濃縮" class="w-4 h-4 cursor-pointer"> 濃縮</label>
+                                    </div>
+                                </div>
+                                <input type="text" id="adjustmentsOther" placeholder="自訂教學調整其他內容 (非必填)..." class="w-full mt-2 p-1.5 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-indigo-500 bg-white focus:outline-none">
+                            </div>
+                            
+                            <!-- 4. 教學評量 -->
+                            <div class="section-box flex flex-col justify-between">
+                                <div>
+                                    <h3 class="font-bold text-slate-800 mb-2 text-sm border-b pb-1">4. 教學評量</h3>
+                                    <div class="checkbox-grid-dense text-xs text-slate-600 mb-2">
+                                        <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" name="assessments" value="紙筆測驗" class="w-4 h-4 cursor-pointer"> 紙筆測驗</label>
+                                        <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" name="assessments" value="口頭測驗" class="w-4 h-4 cursor-pointer"> 口頭測驗</label>
+                                        <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" name="assessments" value="指認" class="w-4 h-4 cursor-pointer"> 指認</label>
+                                        <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" name="assessments" value="觀察評量" class="w-4 h-4 cursor-pointer"> 觀察評量</label>
+                                        <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" name="assessments" value="實作評量" class="w-4 h-4 cursor-pointer"> 實作評量</label>
+                                        <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" name="assessments" value="檔案評量" class="w-4 h-4 cursor-pointer"> 檔案評量</label>
+                                        <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" name="assessments" value="同儕互評" class="w-4 h-4 cursor-pointer"> 同儕互評</label>
+                                        <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" name="assessments" value="自我評量" class="w-4 h-4 cursor-pointer"> 自我評量</label>
+                                    </div>
+                                </div>
+                                <input type="text" id="assessmentsOther" placeholder="自訂教學評量其他內容 (非必填)..." class="w-full mt-2 p-1.5 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-indigo-500 bg-white focus:outline-none">
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 區塊四：內容構想與 AI 生成 -->
+                <section class="mb-8">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-2">
+                        <h2 class="text-xl font-bold text-indigo-900 flex items-center transition-colors">
+                            <span class="bg-indigo-100 text-indigo-800 w-8 h-8 rounded-full inline-flex justify-center items-center mr-2 font-black transition-colors">4</span>
+                            指標貼上與 AI 排課生成
+                        </h2>
+                        <button onclick="openIndicatorModal()" class="w-full sm:w-auto bg-blue-100 hover:bg-blue-200 text-blue-800 font-bold py-2.5 px-4 rounded-xl shadow-sm transition text-sm flex items-center justify-center gap-1">
+                            <span>📖</span> 開啟 108 特需課綱檢索與勾選
+                        </button>
+                    </div>
+                    
+                    <div class="flex flex-col">
+                        <label class="font-semibold text-slate-700 mb-1 text-sm">請貼上相關課綱指標與您的教學構想：</label>
+                        <p class="text-xs text-slate-400 mb-2">您可以點擊上方按鈕直接勾選課綱，或在此貼上您想融入的內容。AI 將依此彙整出整體目標與每週進度。</p>
+                        <textarea id="curriculumPrompt" rows="5" class="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm bg-white focus:outline-none transition-all" placeholder="例如：
+特社1-I-1 分辨與表達基本的正向或負向情緒
+特社A-Ⅰ-1 基本情緒的認識與分辨
+預計第一學期教情緒覺察與常規，第二學期教社交互動..."></textarea>
+                    </div>
+                </section>
+
+                <div class="text-center mb-4 pt-4 border-t border-slate-100">
+                    <button id="generateBtn" class="bg-indigo-600 text-white font-bold py-3.5 px-10 rounded-xl hover:bg-indigo-700 focus:ring-4 focus:ring-indigo-300 transition duration-300 shadow-md hover:shadow-lg text-lg active:scale-95">
+                        ✨ 產出領域教學計畫表 (含進度)
+                    </button>
+                </div>
+
+                <!-- 結果預覽區塊 -->
+                <div id="resultContainer" class="mt-8 hidden">
+                    <div class="flex justify-center items-center mb-6 py-6" id="loaderContainer">
+                        <div class="loader mr-4"></div>
+                        <p class="text-slate-600 font-medium">AI 正在為您彙整重點與編排每週進度，請稍候...</p>
+                    </div>
+                    
+                    <div id="errorContainer" class="hidden text-center p-4 bg-red-100 text-red-700 rounded-xl mb-6 font-semibold"></div>
+
+                    <div id="outputArea" class="hidden">
+                        <div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-4 gap-4">
+                            <div>
+                                <h3 class="text-xl font-bold text-slate-800 flex items-center gap-1"><span>📌</span> 計畫表預覽 (節錄重點)</h3>
+                                <p class="text-xs text-slate-400">此預覽僅顯示 AI 產生的主要文字內容。匯出 Word 時會自動合成符合南投縣 9 欄公版的完整表格[cite: 3]。</p>
+                            </div>
+                            <div class="flex flex-wrap gap-2 w-full md:w-auto">
+                                <button id="copyTextBtn" class="flex-1 md:flex-none bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2.5 px-5 rounded-xl shadow-sm transition flex items-center justify-center whitespace-nowrap gap-1">
+                                    📋 複製產出文字
+                                </button>
+                                <button id="exportWordBtn" class="flex-1 md:flex-none bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 px-6 rounded-xl shadow-md transition flex items-center justify-center whitespace-nowrap gap-1">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                                    匯出 Word 完整格式
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- AI 文字資料顯示區 -->
+                        <div class="bg-slate-50 border border-slate-200 rounded-xl p-5 mb-6 text-sm">
+                            <h4 class="font-bold text-indigo-800 mb-2 border-b pb-1">重大議題及學習主題</h4>
+                            <div id="previewTheme" class="mb-4 text-slate-700 whitespace-pre-wrap leading-relaxed"></div>
+                            
+                            <h4 class="font-bold text-indigo-800 mb-2 border-b pb-1">特殊需求領域學習重點</h4>
+                            <p class="font-bold text-slate-600">學習表現：</p>
+                            <div id="previewPerf" class="mb-2 text-slate-700 whitespace-pre-wrap leading-relaxed"></div>
+                            <p class="font-bold text-slate-600 mt-2">學習內容：</p>
+                            <div id="previewContent" class="mb-4 text-slate-700 whitespace-pre-wrap leading-relaxed"></div>
+                            
+                            <h4 class="font-bold text-indigo-800 mb-2 border-b pb-1">特殊需求領域課程學習目標</h4>
+                            <div id="previewObj" class="text-slate-700 whitespace-pre-wrap leading-relaxed"></div>
+                        </div>
+
+                        <!-- 進度表顯示區 -->
+                        <div id="tableRenderArea" class="w-full"></div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- 課綱檢索 Modal -->
+    <div id="indicatorModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-[1200px] h-[90vh] md:h-[85vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden border-t-8 border-blue-500 animate-fade-in">
+            
+            <!-- Modal Header & 控制面板 -->
+            <div class="bg-slate-50 p-4 border-b border-slate-200 flex-shrink-0">
+                <div class="flex justify-between items-center mb-3">
+                    <h2 class="text-lg md:text-xl font-black text-slate-800 flex items-center gap-2">
+                        <span>🔍</span> 108課綱特殊需求領域指標檢索 (<span id="modalDomainTitle">社會技巧</span>)
+                    </h2>
+                    <button onclick="closeIndicatorModal()" class="text-slate-400 hover:text-slate-600 text-3xl font-bold px-2 leading-none">&times;</button>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-3 items-center">
+                    <!-- 領域選擇 -->
+                    <div class="lg:col-span-3">
+                        <select id="filterDomain" class="w-full px-3 py-2 border border-slate-300 rounded-lg font-bold text-slate-700 focus:outline-none focus:border-blue-500 text-sm bg-white" onchange="updateStageOptions()">
+                            <option value="社會技巧">社會技巧</option>
+                            <option value="生活管理">生活管理</option>
+                            <option value="學習策略">學習策略</option>
+                            <option value="職業教育">職業教育</option>
+                            <option value="溝通訓練">溝通訓練</option>
+                            <option value="定向行動">定向行動</option>
+                            <option value="功能性動作訓練">功能性動作訓練</option>
+                            <option value="點字">點字</option>
+                            <option value="輔助科技應用">輔助科技應用</option>
+                        </select>
+                    </div>
+                    <!-- 階段選擇 -->
+                    <div class="lg:col-span-4">
+                        <select id="filterStage" class="w-full px-3 py-2 border border-slate-300 rounded-lg font-bold text-slate-700 focus:outline-none focus:border-blue-500 text-sm bg-white" onchange="renderIndicators()">
+                        </select>
+                    </div>
+                    <!-- 關鍵字過濾 -->
+                    <div class="lg:col-span-5 relative">
+                        <input type="text" id="keywordSearch" oninput="renderIndicators()" placeholder="輸入關鍵字篩選... (如：情緒、專注)" class="w-full pl-8 pr-3 py-2 border border-slate-300 rounded-lg font-bold text-sm focus:outline-none focus:border-blue-500 bg-white">
+                        <span class="absolute left-2.5 top-2.5 text-slate-400 text-sm">🔍</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Body：雙欄展示 -->
+            <div class="flex-grow overflow-hidden flex flex-col lg:flex-row">
+                <!-- 左側：課綱指標瀏覽 -->
+                <div class="w-full lg:w-2/3 p-4 flex flex-col md:flex-row gap-4 h-1/2 lg:h-full border-b lg:border-b-0 lg:border-r border-slate-200">
+                    <div class="flex-1 flex flex-col overflow-hidden">
+                        <div class="bg-blue-500 text-white px-3 py-2 rounded-t-lg font-bold text-sm flex justify-between items-center">
+                            <span>🎯 學習表現</span><span id="perfCount" class="text-xs bg-white/20 px-1.5 py-0.5 rounded">0 筆</span>
+                        </div>
+                        <div id="performanceList" class="bg-slate-50 p-2 border border-t-0 border-slate-200 rounded-b-lg flex-grow overflow-y-auto custom-scrollbar"></div>
+                    </div>
+
+                    <div class="flex-1 flex flex-col overflow-hidden">
+                        <div class="bg-emerald-500 text-white px-3 py-2 rounded-t-lg font-bold text-sm flex justify-between items-center">
+                            <span>📖 學習內容</span><span id="contentCount" class="text-xs bg-white/20 px-1.5 py-0.5 rounded">0 筆</span>
+                        </div>
+                        <div id="contentList" class="bg-slate-50 p-2 border border-t-0 border-slate-200 rounded-b-lg flex-grow overflow-y-auto custom-scrollbar"></div>
+                    </div>
+                </div>
+
+                <!-- 右側：指標收集箱 -->
+                <div class="w-full lg:w-1/3 p-4 flex flex-col bg-slate-50/50 h-1/2 lg:h-full">
+                    <div class="flex justify-between items-center mb-2">
+                        <h3 class="text-base font-black text-slate-700 flex items-center gap-1">🛒 收集箱</h3>
+                        <span id="cartCountBadge" class="bg-amber-100 text-amber-800 text-xs font-bold px-2 py-0.5 rounded">已選 0 項</span>
+                    </div>
+
+                    <div id="cartList" class="border border-slate-200 bg-white rounded-lg p-2 flex-grow overflow-y-auto custom-scrollbar shadow-inner text-xs mb-3">
+                        <div id="cartEmptyState" class="h-full flex flex-col items-center justify-center text-slate-400 gap-2 text-center py-4">
+                            <span class="text-3xl">📥</span><p class="font-bold">收集箱目前空空如也</p><p class="text-slate-400 px-2">在左側勾選需要的指標</p>
+                        </div>
+                        <div id="cartItemsContainer" class="hidden flex flex-col gap-1.5"></div>
+                    </div>
+
+                    <div class="flex flex-col gap-2 flex-shrink-0">
+                        <button onclick="applyToPrompt()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg py-2.5 shadow transition text-sm active:scale-95">
+                            ✅ 確定，將選取指標填入計畫表
+                        </button>
+                        <button onclick="clearCart()" class="text-center text-xs font-bold text-slate-400 hover:text-red-500 transition py-1">
+                            🗑️ 清空收集箱
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal 專用 Toast -->
+    <div id="toast" class="hidden fixed bottom-10 left-1/2 transform -translate-x-1/2 bg-slate-800/95 backdrop-blur-sm text-white px-6 py-3 rounded-full shadow-2xl z-[60] font-bold text-sm transition-all duration-300 opacity-0"></div>
+
+    <script>
+        // ==========================================
+        // 🔒 在此填入您的 Gemini API Key
+        // ==========================================
+        const apiKey = "AQ.Ab8RN6JS3WeyvUlwKHokXbPwZ3h-b5rgBbWBB5EQYCrjU6C0aA"; // 請將從 Google AI Studio 複製的 AIzaSy... 貼在雙引號中
+
+        // 自訂對話框
+        function customAlert(message, title = "提示") {
+            return new Promise((resolve) => {
+                const dialog = document.getElementById('customDialog');
+                const dTitle = document.getElementById('customDialogTitle');
+                const dMsg = document.getElementById('customDialogMessage');
+                const dCancel = document.getElementById('customDialogCancel');
+                const dConfirm = document.getElementById('customDialogConfirm');
+
+                dTitle.innerText = title;
+                dMsg.innerText = message;
+                dCancel.classList.add('hidden');
+
+                dialog.classList.remove('hidden');
+
+                const handleConfirm = () => {
+                    dialog.classList.add('hidden');
+                    dConfirm.removeEventListener('click', handleConfirm);
+                    resolve(true);
+                };
+                dConfirm.addEventListener('click', handleConfirm);
+            });
+        }
+
+        function customConfirm(message, title = "確認動作") {
+            return new Promise((resolve) => {
+                const dialog = document.getElementById('customDialog');
+                const dTitle = document.getElementById('customDialogTitle');
+                const dMsg = document.getElementById('customDialogMessage');
+                const dCancel = document.getElementById('customDialogCancel');
+                const dConfirm = document.getElementById('customDialogConfirm');
+
+                dTitle.innerText = title;
+                dMsg.innerText = message;
+                dCancel.classList.remove('hidden');
+
+                dialog.classList.remove('hidden');
+
+                const handleConfirm = () => {
+                    dialog.classList.add('hidden');
+                    cleanup();
+                    resolve(true);
+                };
+                const handleCancel = () => {
+                    dialog.classList.add('hidden');
+                    cleanup();
+                    resolve(false);
+                };
+
+                function cleanup() {
+                    dConfirm.removeEventListener('click', handleConfirm);
+                    dCancel.removeEventListener('click', handleCancel);
+                }
+
+                dConfirm.addEventListener('click', handleConfirm);
+                dCancel.addEventListener('click', handleCancel);
+            });
+        }
+
+        const getCheckedValues = (name) => Array.from(document.querySelectorAll(`input[name="${name}"]:checked`)).map(cb => cb.value);
+
+        const generateBtn = document.getElementById('generateBtn');
+        const resultContainer = document.getElementById('resultContainer');
+        const loaderContainer = document.getElementById('loaderContainer');
+        const outputArea = document.getElementById('outputArea');
+        const tableRenderArea = document.getElementById('tableRenderArea');
+        const errorContainer = document.getElementById('errorContainer');
+        
+        let aiParsedData = null;
+
+        async function fetchWithBackoff(url, options) {
+            const delays = [1000, 2000, 4000, 8000, 16000];
+            let lastError = null;
+            
+            for (let i = 0; i <= delays.length; i++) {
+                try {
+                    const response = await fetch(url, options);
+                    if (response.ok) return response;
+                    if (response.status !== 429 && response.status < 500) {
+                        throw new Error(`HTTP 錯誤狀態: ${response.status}`);
+                    }
+                    lastError = new Error(`HTTP 錯誤狀態: ${response.status}`);
+                } catch (err) {
+                    lastError = err;
+                }
+                
+                if (i < delays.length) {
+                    await new Promise(resolve => setTimeout(resolve, delays[i]));
+                }
+            }
+            throw lastError || new Error("連線失敗，請檢查您的網路狀態。");
+        }
+
+        generateBtn.addEventListener('click', async () => {
+            if (!apiKey) {
+                await customAlert("請先在程式碼中的 const apiKey = \"\"; 填入您的 Google Gemini API Key！", "未設定 API Key");
+                return;
+            }
+
+            const promptText = document.getElementById('curriculumPrompt').value.trim();
+            const issues = getCheckedValues('issues').join('、');
+            const weeksPerSemester = parseInt(document.getElementById('weeksPerSemester').value) || 21;
+
+            if (!promptText) {
+                await customAlert("請填寫課綱指標或教學構想，讓 AI 有發想的依據！", "欄位未填");
+                return;
+            }
+
+            resultContainer.classList.remove('hidden');
+            loaderContainer.classList.remove('hidden');
+            outputArea.classList.add('hidden');
+            errorContainer.classList.add('hidden');
+            generateBtn.disabled = true;
+            generateBtn.classList.add('opacity-50');
+
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash:generateContent?key=${apiKey}`;
+
+            const sysPrompt = `你是一位台灣資深特教老師。請根據使用者提供的設定，產出符合格式的「特殊需求領域教學計畫」。
+請嚴格遵守以下 Markdown 格式輸出，絕對不要有任何多餘的對話、前言或結語：
+
+### 學習重點與目標
+**重大議題及學習主題：**
+(根據使用者勾選的重大議題，簡要發想學習主題。例如：若勾選人權教育，寫「人權教育：人權與民主法治。」若無勾選則填寫「無」)
+**學習表現：**
+(依據使用者提供的內容，列出課綱代碼與完整文字，條列式)
+**學習內容：**
+(依據使用者提供的內容，列出課綱代碼與完整文字，條列式)
+**課程學習目標：**
+(統整出整體具體的課程學習目標，條列式)
+
+### 第一學期
+| 週次 | 單元名稱 | 單元目標 |
+|---|---|---|
+| 1-4 | 一、單元名稱 | 1. 目標一<br>2. 目標二 |
+(請將週次適度合併規劃，以2至4週為原則，例如 1-4, 5-8 等，不要一行一週。每學期總週數為 ${weeksPerSemester} 週。)
+
+### 第二學期
+| 週次 | 單元名稱 | 單元目標 |
+|---|---|---|
+| 1-4 | 一、單元名稱 | 1. 目標一<br>2. 目標二 |
+(同樣適度合併週次規劃，每學期總週數為 ${weeksPerSemester} 週。)
+`;
+
+            const userPrompt = `
+勾選的重大議題：${issues || '無'}
+每學期總週數：${weeksPerSemester}週
+
+【教師教學構想/參考指標內容】
+${promptText}`;
+
+            try {
+                let payload = {
+                    contents: [{ parts: [{ text: userPrompt }] }],
+                    systemInstruction: { parts: [{ text: sysPrompt }] }
+                };
+
+                const response = await fetchWithBackoff(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    if (response.status === 403) throw new Error("403 金鑰無效，請確認填入的 API Key 是否正確[cite: 4]");
+                    throw new Error(`API 請求失敗 (狀態碼: ${response.status})`);
+                }
+                
+                const result = await response.json();
+                const mdText = result.candidates?.[0]?.content?.parts?.[0]?.text;
+                
+                if (mdText) {
+                    parseAndRender(mdText);
+                    loaderContainer.classList.add('hidden');
+                    outputArea.classList.remove('hidden');
+                } else {
+                    throw new Error("無法產出符合格式的內容");
+                }
+            } catch (err) {
+                loaderContainer.classList.add('hidden');
+                errorContainer.innerText = `產生失敗：${err.message}。請稍後再試。`;
+                errorContainer.classList.remove('hidden');
+            } finally {
+                generateBtn.disabled = false;
+                generateBtn.classList.remove('opacity-50');
+            }
+        });
+
+        function extractSection(text, startRegex, endRegex) {
+            const startMatch = text.match(startRegex);
+            if (!startMatch) return "";
+            const startIndex = startMatch.index + startMatch[0].length;
+            let endIndex = text.length;
+            if (endRegex) {
+                const endMatch = text.substring(startIndex).match(endRegex);
+                if (endMatch) {
+                    endIndex = startIndex + endMatch.index;
+                }
+            }
+            return text.substring(startIndex, endIndex).trim();
+        }
+
+        function parseAndRender(text) {
+            const theme = extractSection(text, /\*\*重大議題及學習主題：\*\*|\*\*重大議題及學習主題\*\*/i, /\*\*學習表現：\*\*|\*\*學習表現\*\*/i);
+            const perf = extractSection(text, /\*\*學習表現：\*\*|\*\*學習表現\*\*/i, /\*\*學習內容：\*\*|\*\*學習內容\*\*/i);
+            const content = extractSection(text, /\*\*學習內容：\*\*|\*\*學習內容\*\*/i, /\*\*課程學習目標：\*\*|\*\*課程學習目標\*\*/i);
+            const obj = extractSection(text, /\*\*課程學習目標：\*\*|\*\*課程學習目標\*\*/i, /(?:###|##)?\s*(第一學期)/i);
+
+            aiParsedData = {
+                theme: theme || '無',
+                perf: perf || '未設定',
+                content: content || '未設定',
+                obj: obj || '未設定',
+                sem1Table: [],
+                sem2Table: []
+            };
+
+            document.getElementById('previewTheme').innerHTML = aiParsedData.theme.replace(/\n/g, '<br>');
+            document.getElementById('previewPerf').innerHTML = aiParsedData.perf.replace(/\n/g, '<br>');
+            document.getElementById('previewContent').innerHTML = aiParsedData.content.replace(/\n/g, '<br>');
+            document.getElementById('previewObj').innerHTML = aiParsedData.obj.replace(/\n/g, '<br>');
+
+            let sem1Text = "", sem2Text = "";
+            const sem1Match = text.match(/(?:###|##)?\s*第一學期/i);
+            const sem2Match = text.match(/(?:###|##)?\s*第二學期/i);
+
+            if (sem1Match && sem2Match) {
+                const sem1Start = sem1Match.index + sem1Match[0].length;
+                const sem2Start = sem2Match.index;
+                sem1Text = text.substring(sem1Start, sem2Start);
+                sem2Text = text.substring(sem2Start + sem2Match[0].length);
+            } else if (sem1Match) {
+                sem1Text = text.substring(sem1Match.index + sem1Match[0].length);
+            }
+
+            aiParsedData.sem1Table = parseMarkdownTable(sem1Text);
+            aiParsedData.sem2Table = parseMarkdownTable(sem2Text);
+
+            let tablesHtml = "";
+            if (aiParsedData.sem1Table.length > 0) {
+                tablesHtml += `<h4 class="font-bold text-lg text-indigo-900 mt-6 mb-2 transition-colors">【第一學期】每週進度表</h4>`;
+                tablesHtml += buildHTMLTable(aiParsedData.sem1Table);
+            }
+            if (aiParsedData.sem2Table.length > 0) {
+                tablesHtml += `<h4 class="font-bold text-lg text-indigo-900 mt-6 mb-2 transition-colors">【第二學期】每週進度表</h4>`;
+                tablesHtml += buildHTMLTable(aiParsedData.sem2Table);
+            }
+            tableRenderArea.innerHTML = tablesHtml;
+        }
+
+        function parseMarkdownTable(text) {
+            if(!text) return [];
+            const lines = text.split('\n').map(l => l.trim()).filter(l => l.startsWith('|'));
+            if(lines.length < 2) return [];
+            
+            let startIndex = 0;
+            if (lines[0].toLowerCase().includes('週次') || lines[0].toLowerCase().includes('week')) {
+                startIndex = 2;
+            }
+            
+            let data = [];
+            for (let i = startIndex; i < lines.length; i++) {
+                const cells = lines[i].split('|').slice(1, -1).map(c => c.trim().replace(/<br\s*\/?>/gi, '\n'));
+                if(cells.length >= 3) {
+                    data.push(cells.slice(0, 3));
+                }
+            }
+            return data;
+        }
+
+        function buildHTMLTable(data) {
+            let html = `<div class="overflow-x-auto"><table class="output-table"><thead><tr>`;
+            const headers = ["週次", "單元名稱", "單元目標"];
+            headers.forEach(h => html += `<th>${h}</th>`);
+            html += `</tr></thead><tbody>`;
+            data.forEach(row => {
+                const formattedCell2 = (row[2] || '').replace(/\n/g, '<br>');
+                html += `<tr><td class="font-semibold text-slate-700">${row[0]||''}</td><td class="font-medium">${row[1]||''}</td><td>${formattedCell2}</td></tr>`;
+            });
+            html += `</tbody></table></div>`;
+            return html;
+        }
+
+        document.getElementById('copyTextBtn').addEventListener('click', () => {
+            if (!aiParsedData) {
+                showToast("❌ 無可複製的內容");
+                return;
+            }
+            let outputText = `重大議題與學習主題：\n${aiParsedData.theme}\n\n學習表現：\n${aiParsedData.perf}\n\n學習內容：\n${aiParsedData.content}\n\n學習目標：\n${aiParsedData.obj}\n\n`;
+            
+            if (aiParsedData.sem1Table.length > 0) {
+                outputText += `【第一學期】進度規劃：\n`;
+                aiParsedData.sem1Table.forEach(r => outputText += `週次: ${r[0]} | 單元: ${r[1]} | 目標: ${r[2].replace(/\n/g, ' ')}\n`);
+                outputText += `\n`;
+            }
+            if (aiParsedData.sem2Table.length > 0) {
+                outputText += `【第二學期】進度規劃：\n`;
+                aiParsedData.sem2Table.forEach(r => outputText += `週次: ${r[0]} | 單元: ${r[1]} | 目標: ${r[2].replace(/\n/g, ' ')}\n`);
+            }
+
+            const textarea = document.createElement('textarea');
+            textarea.value = outputText;
+            textarea.style.position = 'fixed';
+            document.body.appendChild(textarea);
+            textarea.select();
+            try {
+                document.execCommand('copy');
+                showToast('📋 已將成果複製至剪貼簿！');
+            } catch (err) {
+                showToast('❌ 複製失敗，請手動全選複製。');
+            }
+            document.body.removeChild(textarea);
+        });
+
+        // =========================================================================
+        // 🌟 匯出符合南投縣 9 欄標準公版規範的 Word 表格
+        // =========================================================================
+        document.getElementById('exportWordBtn').addEventListener('click', exportToWord);
+
+        async function exportToWord() {
+            if (!aiParsedData) { 
+                await customAlert("沒有可匯出的資料！", "匯出失敗"); 
+                return; 
+            }
+
+            const v = {
+                county: document.getElementById('county').value || '南投縣南投市',
+                schoolName: document.getElementById('schoolName').value || '新豐國民小學',
+                year: document.getElementById('schoolYear').value || '115',
+                teacher: document.getElementById('teacherName').value || '  ',
+                groupName: document.getElementById('groupName').value || '特A組',
+                studentCount: document.getElementById('studentCount').value || '2',
+                domainName: document.getElementById('domainName').value || '特殊需求領域（社會技巧）',
+                classType: document.getElementById('classType').value || '分散式資源班',
+                weeklyPeriods: document.getElementById('weeklyPeriods').value || '1',
+            };
+
+            const coreSet = getCheckedValues('coreComp');
+            const issueSet = getCheckedValues('issues');
+            const matSet = getCheckedValues('materials');
+            const metSet = getCheckedValues('methods');
+            const adjSet = getCheckedValues('adjustments');
+            const assSet = getCheckedValues('assessments');
+
+            const matOtherInput = document.getElementById('materialsOther').value.trim();
+            const metOtherInput = document.getElementById('methodsOther').value.trim();
+            const adjOtherInput = document.getElementById('adjustmentsOther').value.trim();
+            const assOtherInput = document.getElementById('assessmentsOther').value.trim();
+
+            const fBox = (val, list) => list.includes(val) ? '■' + val : '□' + val;
+            const brText = (t) => (t || '').replace(/\n/g, '<br>');
+
+            const issuesAll = [
+                '人權教育', '環境教育', '海洋教育', '品德教育', '生命教育',
+                '法治教育', '科技教育', '資訊教育', '能源教育', '安全教育',
+                '防災教育', '家庭教育', '閱讀素養', '戶外教育', '國際教育',
+                '生涯規劃教育', '多元文化教育', '原住民族教育', '性別平等教育'
+            ];
+            let issuesHtml = issuesAll.map(item => fBox(item, issueSet)).join('&nbsp;&nbsp;');
+
+            const matAll = ['圖書繪本', '學術研究', '報章雜誌', '影片資源', '網路', '新聞', '自編教材'];
+            let matHtml = `□教科書（&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;版本，第&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;冊）<br>` +
+                          matAll.map(m => fBox(m, matSet)).join('&nbsp;&nbsp;&nbsp;&nbsp;') +
+                          `&nbsp;&nbsp;&nbsp;&nbsp;${matOtherInput ? '■其他：' + matOtherInput : '□其他：'}`;
+
+            const metAll = [
+                '直接教學法', '工作分析教學法', '多層次教學法', '結構式教學法',
+                '交互教學法', '圖片交換系統', '識字教學法', '社會故事教學法',
+                '講述法', '討論法', '觀察法', '問思教學法',
+                '發表法', '自學輔導法', '探究教學法', '編序教學法',
+                '合作學習法', '價值澄清法', '角色扮演法', '問題解決教學法'
+            ];
+            let metHtml = metAll.map(m => fBox(m, metSet)).join('&nbsp;&nbsp;&nbsp;&nbsp;') +
+                          `&nbsp;&nbsp;&nbsp;&nbsp;${metOtherInput ? '■其他：' + metOtherInput : '□其他：'}`;
+
+            const adjAll = ['簡化', '減量', '分解', '替代', '重整', '加深', '加廣', '加速', '濃縮'];
+            let adjHtml = adjAll.map(m => fBox(m, adjSet)).join('&nbsp;&nbsp;&nbsp;&nbsp;') +
+                          `&nbsp;&nbsp;&nbsp;&nbsp;${adjOtherInput ? '■其他：' + adjOtherInput : '□其他：'}`;
+
+            const assAll = ['紙筆測驗', '口頭測驗', '指認', '觀察評量', '實作評量', '檔案評量', '同儕互評', '自我評量'];
+            let assHtml = assAll.map(m => fBox(m, assSet)).join('&nbsp;&nbsp;&nbsp;&nbsp;') +
+                          `&nbsp;&nbsp;&nbsp;&nbsp;${assOtherInput ? '■其他：' + assOtherInput : '□其他：'}`;
+
+            const renderPlanRows = (tableData) => {
+                if (!tableData || tableData.length === 0) {
+                    return `<tr><td style="border:1px solid #000; text-align:center;">&nbsp;</td><td colspan="2" style="border:1px solid #000;">&nbsp;</td><td colspan="6" style="border:1px solid #000;">&nbsp;</td></tr>`;
+                }
+                return tableData.map(row => `
+                    <tr>
+                        <td style="border:1px solid #000; text-align:center; font-weight:bold; vertical-align:middle;">${row[0] || ''}</td>
+                        <td colspan="2" style="border:1px solid #000; padding:6px; vertical-align:top;">${row[1] || ''}</td>
+                        <td colspan="6" style="border:1px solid #000; padding:6px; vertical-align:top;">${(row[2] || '').replace(/\n/g, '<br>')}</td>
+                    </tr>
+                `).join('');
+            };
+
+            const htmlContent = `
+                <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+                <head>
+                    <meta charset='utf-8'>
+                    <title>${v.county}${v.schoolName}${v.year}學年度特殊需求領域教學計畫表</title>
+                    <style>
+                        @page WordSection1 { size: 595.3pt 841.9pt; mso-page-orientation: portrait; margin: 2.0cm 2.0cm 2.0cm 2.0cm; }
+                        div.WordSection1 { page: WordSection1; }
+                        body { font-family: 'DFKai-SB', '標楷體', 'Times New Roman', serif; font-size: 11pt; line-height: 1.5; }
+                        h1 { text-align: center; font-size: 15pt; font-weight: bold; margin-bottom: 14px; }
+                        table.main-table { width: 100%; border-collapse: collapse; border: 1.5px solid #000; table-layout: fixed; }
+                        table.main-table td, table.main-table th { border: 1px solid #000; padding: 6px 8px; vertical-align: top; word-break: break-all; }
+                        .title-cell { font-weight: bold; text-align: center; vertical-align: middle; background-color: #ffffff; }
+                        .sub-title { font-weight: bold; }
+                        .sem-header { font-weight: bold; font-size: 11pt; background-color: #ffffff; text-align: left; }
+                        .footer-notes { font-size: 9pt; color: #333333; margin-top: 10px; line-height: 1.4; }
+                    </style>
+                </head>
+                <body>
+                    <div class="WordSection1">
+                        <h1>${v.county}${v.schoolName}${v.year}學年度特殊需求領域教學計畫表</h1>
+                        
+                        <table class="main-table">
+                            <colgroup>
+                                <col style="width: 11%;">
+                                <col style="width: 11%;">
+                                <col style="width: 11%;">
+                                <col style="width: 11%;">
+                                <col style="width: 11%;">
+                                <col style="width: 11%;">
+                                <col style="width: 11%;">
+                                <col style="width: 11%;">
+                                <col style="width: 12%;">
+                            </colgroup>
+
+                            <tr>
+                                <td class="title-cell" colspan="2">領域</td>
+                                <td colspan="7">${v.domainName}</td>
+                            </tr>
+                            <tr>
+                                <td class="title-cell" colspan="2">班型</td>
+                                <td colspan="7">${v.classType}</td>
+                            </tr>
+                            <tr>
+                                <td class="title-cell" colspan="2">每週節數</td>
+                                <td colspan="3">${v.weeklyPeriods}節</td>
+                                <td class="title-cell" colspan="2">教學者</td>
+                                <td colspan="2">${v.teacher}</td>
+                            </tr>
+                            <tr>
+                                <td class="title-cell" colspan="2">組別/教學人數</td>
+                                <td colspan="7">${v.groupName} / ${v.studentCount}人</td>
+                            </tr>
+
+                            <tr>
+                                <td class="title-cell" rowspan="3" colspan="2">核心素養</td>
+                                <td colspan="2" class="sub-title">A自主行動</td>
+                                <td colspan="5">
+                                    ${fBox('A1.身心素質與自我精進', coreSet)}<br>
+                                    ${fBox('A2.系統思考與問題解決', coreSet)}<br>
+                                    ${fBox('A3.規劃執行與創新應變', coreSet)}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td colspan="2" class="sub-title">B溝通互動</td>
+                                <td colspan="5">
+                                    ${fBox('B1.符號運用與溝通表達', coreSet)}<br>
+                                    ${fBox('B2.科技資訊與媒體素養', coreSet)}<br>
+                                    ${fBox('B3.藝術涵養與美感素養', coreSet)}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td colspan="2" class="sub-title">C社會參與</td>
+                                <td colspan="5">
+                                    ${fBox('C1.道德實踐與公民意識', coreSet)}<br>
+                                    ${fBox('C2.人際關係與團隊合作', coreSet)}<br>
+                                    ${fBox('C3.多元文化與國際理解', coreSet)}
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td class="title-cell" rowspan="2" colspan="2">重大議題<br>及學習主題</td>
+                                <td colspan="7">
+                                    <span class="sub-title">重大議題：</span><br>
+                                    ${issuesHtml}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td colspan="7">
+                                    <span class="sub-title">學習主題：</span><br>
+                                    ${brText(aiParsedData.theme)}
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td class="title-cell" colspan="2">學習重點</td>
+                                <td colspan="7">
+                                    <div class="sub-title" style="margin-bottom:4px;">特殊需求領域學習表現/學習內容：</div>
+                                    <span class="sub-title">【學習表現】</span><br>
+                                    ${brText(aiParsedData.perf)}<br><br>
+                                    <span class="sub-title">【學習內容】</span><br>
+                                    ${brText(aiParsedData.content)}
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td class="title-cell" colspan="2">學習目標</td>
+                                <td colspan="7">
+                                    <span class="sub-title">特殊需求領域課程學習目標：</span><br>
+                                    ${brText(aiParsedData.obj)}
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td class="title-cell" colspan="2">教學與評量說明</td>
+                                <td colspan="7">
+                                    <div class="sub-title">1.教材編輯與資源</div>
+                                    ${matHtml}<br><br>
+                                    <div class="sub-title">2.教學方法</div>
+                                    ${metHtml}<br><br>
+                                    <div class="sub-title">3.教學調整</div>
+                                    ${adjHtml}<br><br>
+                                    <div class="sub-title">4.教學評量</div>
+                                    ${assHtml}<br>
+                                    <span style="font-size: 9.5pt; color: #475569;">評量結果得以等第、數量或質性文字描述紀錄等方式呈現</span><br><br>
+                                    <div class="sub-title">5.其他</div>
+                                    無
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td colspan="9" class="sem-header">第一學期</td>
+                            </tr>
+                            <tr style="background-color:#ffffff; font-weight:bold; text-align:center;">
+                                <td>週次</td>
+                                <td colspan="2">單元名稱</td>
+                                <td colspan="6">單元目標</td>
+                            </tr>
+                            ${renderPlanRows(aiParsedData.sem1Table)}
+
+                            <tr>
+                                <td colspan="9" class="sem-header">第二學期</td>
+                            </tr>
+                            <tr style="background-color:#ffffff; font-weight:bold; text-align:center;">
+                                <td>週次</td>
+                                <td colspan="2">單元名稱</td>
+                                <td colspan="6">單元目標</td>
+                            </tr>
+                            ${renderPlanRows(aiParsedData.sem2Table)}
+                        </table>
+
+                        <div class="footer-notes">
+                            說明：<br>
+                            1. 領域名稱：語文、數學、社會、自然科學、生活科技、綜合活動、藝術、健康與體育、生活、特殊需求（生活管理、職業教育、社會技巧、定向行動、點字課程、溝通訓練、功能性動作訓練、輔助科技應用、學習策略、領導才能、情意發展、創造力、獨立研究）。<br>
+                            2. 班型名稱：集中式特教班、分散式資源班、巡迴輔導班、在家教育班、普通班接受特殊教育服務、資優資源班。<br>
+                            3. 重大議題及學習主題：僅須摘錄該重大議題之學習主題即可，不必列出實質內涵。<br>
+                            4. 週次與單元：請依學校行事曆規劃週次，每個單元安排週次以2至4週為原則。
+                        </div>
+                    </div>
+                </body>
+                </html>
+            `;
+
+            const blob = new Blob(['\ufeff', htmlContent], { type: 'application/msword' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `${v.year}學年度_${v.schoolName}_特殊需求領域教學計畫表.doc`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }
+
+        document.getElementById('fillExampleBtn').addEventListener('click', () => {
+            document.getElementById('county').value = '南投縣南投市';
+            document.getElementById('schoolName').value = '新豐國民小學';
+            document.getElementById('schoolYear').value = '115';
+            document.getElementById('teacherName').value = '蘇雍程';
+            document.getElementById('groupName').value = '特A組';
+            document.getElementById('studentCount').value = '2';
+            document.getElementById('weeksPerSemester').value = '21';
+            document.getElementById('weeklyPeriods').value = '1';
+            document.getElementById('domainName').value = '特殊需求領域（社會技巧）';
+            document.getElementById('classType').value = '分散式資源班';
+            
+            const checksCore = ['A1.身心素質與自我精進', 'B1.符號運用與溝通表達', 'C2.人際關係與團隊合作'];
+            document.querySelectorAll('input[name="coreComp"]').forEach(cb => cb.checked = checksCore.includes(cb.value));
+            const checksIssues = ['人權教育', '環境教育', '性別平等教育'];
+            document.querySelectorAll('input[name="issues"]').forEach(cb => cb.checked = checksIssues.includes(cb.value));
+            const checksMat = ['圖書繪本', '影片資源', '網路', '自編教材'];
+            document.querySelectorAll('input[name="materials"]').forEach(cb => cb.checked = checksMat.includes(cb.value));
+            const checksMet = ['直接教學法', '討論法', '合作學習法', '角色扮演法', '問題解決教學法'];
+            document.querySelectorAll('input[name="methods"]').forEach(cb => cb.checked = checksMet.includes(cb.value));
+            const checksAss = ['口頭測驗', '指認', '觀察評量', '實作評量', '同儕互評', '自我評量'];
+            document.querySelectorAll('input[name="assessments"]').forEach(cb => cb.checked = checksAss.includes(cb.value));
+            
+            document.getElementById('materialsOther').value = '班級情緒卡、iPad情緒辨識軟體';
+            document.getElementById('methodsOther').value = '同儕示範法、影音回饋、情境式實地演練';
+            document.getElementById('adjustmentsOther').value = '提供觸覺減壓教具、提供情緒冷靜區';
+            document.getElementById('assessmentsOther').value = '行為檢核表記錄、師長晤談質性回饋';
+
+            document.getElementById('curriculumPrompt').value = `特社1-I-1 分辨與表達基本的正向或負向情緒。
+特社1-I-3 學習面對可能遭遇的失敗。
+特社2-I-7 了解與人相處的情境、簡單規則，建立友善的關係。
+
+特社A-Ⅰ-1 基本情緒的認識與分辨。
+特社B-Ⅰ-3 人際關係的建立。
+特社C-Ⅰ-1 學校規則的認識與遵守。
+
+第一學期重點：上課專注與情緒覺察
+第二學期重點：同儕互動與失敗調適`;
+            
+            showToast('已填入社會技巧範例資料！ 💡');
+        });
+
+        document.getElementById('clearFormBtn').addEventListener('click', async () => {
+            const confirmed = await customConfirm('確定要重設目前所有的表單欄位與設定嗎？', '清空表單');
+            if (confirmed) {
+                document.getElementById('county').value = '';
+                document.getElementById('schoolName').value = '';
+                document.getElementById('schoolYear').value = '';
+                document.getElementById('teacherName').value = '';
+                document.getElementById('groupName').value = '';
+                document.getElementById('studentCount').value = '';
+                document.getElementById('weeksPerSemester').value = '21';
+                document.getElementById('weeklyPeriods').value = '1';
+                document.getElementById('domainName').value = '特殊需求領域（社會技巧）';
+                document.getElementById('classType').selectedIndex = 0;
+                document.getElementById('curriculumPrompt').value = '';
+                
+                document.getElementById('materialsOther').value = '';
+                document.getElementById('methodsOther').value = '';
+                document.getElementById('adjustmentsOther').value = '';
+                document.getElementById('assessmentsOther').value = '';
+
+                document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+                cart = [];
+                updateCartUI();
+
+                resultContainer.classList.add('hidden');
+                outputArea.classList.add('hidden');
+                aiParsedData = null;
+
+                showToast('🧹 已重設並清空所有輸入欄位');
+            }
+        });
+
+        const themeMapping = {
+            "特學1": "提升認知學習", "特學2": "提升動機與態度", "特學3": "運用環境與學習工具", "特學4": "發展後設認知策略",
+            "特學A": "認知策略", "特學B": "態度與動機策略", "特學C": "環境調整和學習工具運用策略", "特學D": "後設認知策略",
+            "特社1": "處己", "特社2": "處人", "特社3": "處環境",
+            "特社A": "自我的行為與效能", "特社B": "溝通與人際的互動", "特社C": "家庭與社會的參與",
+            "特生1": "自我照顧", "特生2": "家庭生活", "特生3": "社區參與", "特生4": "自我決策",
+            "特生A": "飲食", "特生B": "衣著", "特生C": "個人衛生", "特生D": "健康管理", "特生E": "財物管理", "特生F": "環境衛生", "特生G": "居家安全", "特生H": "休閒活動", "特生I": "家庭關係與自我保護", "特生J": "行動與交通安全", "特生K": "社區生活", "特生L": "獨立自主與自我管理", "特生M": "心理賦權與自我實現",
+            "特職1": "工作資訊", "特職2": "求職準備", "特職3": "工作表現", "特職4": "工作安全", "特職5": "工作習慣", "特職6": "工作調適", "特職7": "團隊合作",
+            "特職A": "工作知識", "特職B": "工作技能", "特職C": "工作態度",
+            "特溝1": "訊息理解", "特溝2": "訊息表達", "特溝3": "互動交流", "特溝4": "合作參與",
+            "特溝A": "非口語訊息", "特溝B": "口語", "特溝C": "手語", "特溝D": "輔助性溝通符號",
+            "特定1": "具備定向能力", "特定2": "獨立行動", "特定3": "倡議宣導",
+            "特定A": "感覺訓練", "特定B": "概念發展與統整", "特定C": "定向系統與應用", "特定D": "行動技能與運用", "特定E": "求助禮儀與自我倡議",
+            "特功1": "肢體活動", "特功2": "功能性動作技能", "特功3": "日常生活參與",
+            "特功A": "四肢與軀幹的關節活動", "特功B": "身體姿勢的維持", "特功C": "身體姿勢的改變", "特功D": "移位", "特功E": "移動", "特功F": "舉起與移動物品", "特功G": "手與手臂使用", "特功H": "手部精細操作", "特功I": "雙側協調與眼手協調", "特功J": "動作計畫", "特功K": "交通工具的乘坐與駕駛",
+            "特點1": "點寫系統", "特點2": "摸讀系統",
+            "特點A": "點字前準備技能", "特點B": "觸覺點字前技能", "特點C": "點字系統",
+            "特輔1": "認識輔具", "特輔2": "選用適宜輔具", "特輔3": "正確操作輔具", "特輔4": "維護輔具及簡易故障排除",
+            "特輔A": "視覺輔具", "特輔B": "聽覺輔具", "特輔C": "行動移位與擺位輔具", "特輔D": "閱讀與書寫輔具", "特輔E": "溝通輔具", "特輔F": "電腦輔具", "特輔G": "其他輔具"
+        };
+
+        const p = (text) => {
+            if(!text) return [];
+            let cleanText = text.replace(/\n/g, ' ').replace(/(特[生社學職溝定功點輔])\s+([A-Za-z0-9])/g, '$1$2');
+            return cleanText.split(/[。.]/).filter(s => s.trim()).map(s => {
+                const str = s.trim();
+                const firstSpace = str.indexOf(' ');
+                if (firstSpace !== -1) {
+                    let id = str.substring(0, firstSpace).trim()
+                                .replace(/Ⅰ/g, 'I').replace(/Ⅱ/g, 'II')
+                                .replace(/Ⅲ/g, 'III').replace(/Ⅳ/g, 'IV').replace(/Ⅴ/g, 'V');
+                    let theme = "";
+                    const match = id.match(/^(特[生社學職溝定功點輔][A-Za-z0-9]+)/);
+                    if (match && themeMapping[match[1]]) {
+                        theme = `${themeMapping[match[1]]}`;
+                    }
+                    return { id: id, theme: theme, text: str.substring(firstSpace).trim() + '。' };
+                }
+                return null;
+            }).filter(item => item !== null);
+        };
+
+        const curriculumData = {
+            "學習策略": {
+                "I": {
+                    performance: p(`特學1-I-1 注意環境中的訊息。 特學1-I-2 區辨環境中訊息的來源管道。 特學1-I-3 忽略干擾訊息。 特學1-I-4 透過提示系統集中注意力。 特學1-I-5 提示下維持專注。 特學1-I-6 依據提示適當轉移注意力。 特學1-I-7 透過練習增加學習印象。 特學1-I-8 透過提示將新訊息和舊經驗連結。 特學1-I-9 依據指示標記學習重點。 特學1-I-10 指出對話內容的重點。 特學1-I-11 依據上下文了解學習內容的意涵。 特學1-I-12 簡要說出常見字詞的意思。 特學1-I-13 註記自己不了解的內容。 特學1-I-14 利用各種輔助訊息了解文意。 特學1-I-15 表達出文章內容的大意。 特學2-I-1 遵守學習規範。 特學2-I-2 願意接受指正，改善不適當的學習行為。 特學2-I-3 保持對學習的興趣。 特學2-I-4 願意追求更佳的學習表現。 特學3-I-1 覺察環境對自己學習的影響。 特學3-I-2 運用多感官學習。 特學3-I-3 在指導下進行學習活動或運用學習工具。 特學3-I-4 認識學習資源。 特學4-I-1 在提醒下依時限完成作業或考試。 特學4-I-2 在協助下檢核學習項目或學習活動完成狀況。`),
+                    content: p(`特學A-I-1 環境中的訊息。 特學A-I-2 提示系統。 特學A-I-3 提示或指導語。 特學A-I-4 增加學習印象的方法。 特學A-I-5 聆聽與對話。 特學A-I-6 常見字詞。 特學A-I-7 語句、短文或文章的理解方法。 特學B-I-1 學習規範和行為。 特學B-I-2 學習興趣和意願。 特學C-I-1 自然的學習環境。 特學C-I-2 學習活動或工具的示範。 特學C-I-3 多感官的學習訊息。 特學C-I-4 多元的學習資源。 特學D-I-1 考試或作業的指導語。 特學D-I-2 可檢核的學習項目或學習活動。`)
+                },
+                "II": {
+                    performance: p(`特學1-II-1 察覺訊息中的重要項目。 特學1-II-2 指出不同訊息的重點。 特學1-II-3 延長專注時間。 特學1-II-4 找出並練習標記學習內容的重點。 特學1-II-5 將學習內容做成心智圖、組織圖或流程圖。 特學1-II-6 運用反覆練習策略，複習學習過的內容。 特學1-II-7 將學習材料化繁為簡，加深記憶。 特學1-II-8 將學習內容和自己的經歷產生連結。 特學1-II-9 指出文章內容相關處或前後關係。 特學1-II-10 簡單歸納學習的內容。 特學1-II-11 說出文章內容的重點與重要概念。 特學1-II-12 表達不清楚或不明白的學習內容。 特學1-II-13 透過討論或對話理解學習內容。 特學2-II-1 在提醒下完成課前和課後的學習工作。 特學2-II-2 對學習具備正向思考。 特學2-II-3 發現增進自我學習動機的方式。 特學3-II-1 選擇適合自己的學習空間。 特學3-II-2 運用各種學習資源。 特學4-II-1 主動依時限完成作業或考試。 特學4-II-2 發現並留意自己學習時常犯的錯誤。`),
+                    content: p(`特學A-II-1 訊息中的重要項目或重點。 特學A-II-2 適當的專注時間。 特學A-II-3 學習內容的重點。 特學A-II-4 心智圖、組織圖或流程圖。 特學A-II-5 反覆練習策略。 特學A-II-6 個人或生活經驗。 特學A-II-7 學習或文章內容脈絡。 特學A-II-8 學習內容的疑問和討論。 特學B-II-1 課前和課後的學習工作。 特學B-II-2 正向的思考或想法。 特學B-II-3 適合鼓勵或增強學習的方式。 特學C-II-1 適合的學習空間。 特學C-II-2 可選擇的學習工具。 特學D-II-1 有時限的作業或考試。 特學D-II-2 自我檢查錯誤的方法。`)
+                },
+                "III": {
+                    performance: p(`特學1-III-1 分辨訊息中的細節差異。 特學1-III-2 調整不同學習項目的專注時間。 特學1-III-3 提示下轉移注意力。 特學1-III-4 運用不同圖示重組學習內容。 特學1-III-5 將需記憶的學習內容與既有的知識產生連結。 特學1-III-6 自行找出並標記學習內容的重點。 特學1-III-7 條列學習內容的重點。 特學1-III-8 簡單說明文章段落間的關係。 特學1-III-9 表達文章內容的核心與重要概念。 特學1-III-10 運用資訊軟體整理學習內容綱要。 特學1-III-11 透過自問自答確認理解的程度。 特學2-III-1 在不同學習情境下調整自己的學習行為。 特學2-III-2 主動完成課前和課後的學習工作。 特學2-III-3 設定符合自己能力水準的學習目標。 特學2-III-4 正向分析自己的學習表現。 特學3-III-1 依需求調整自我學習環境。 特學3-III-2 依需求選用學習工具。 特學4-III-1 分配考試作答的時間和順序。 特學4-III-2 整理自己常犯的錯誤並列出可能解決方法。 特學4-III-3 評估並調整學習活動所需的時間。 特學4-III-4 自我檢核和記錄學習過程及結果。 特學4-III-5 安排自己的作息時間。`),
+                    content: p(`特學A-III-1 訊息中的細節差異。 特學A-III-2 轉移注意力的提示重點。 特學A-III-3 學習內容的記憶方法。 特學A-III-4 重點標記或圖示。 特學A-III-5 文章段落關係和核心概念。 特學A-III-6 資訊軟體。 特學A-III-7 自問自答的技巧與練習。 特學B-III-1 學習行為的調整。 特學B-III-2 預習和複習的工作。 特學B-III-3 適合自己的學習目標和增強策略。 特學B-III-4 學習表現的分析方式。 特學C-III-1 調整學習空間的方法。 特學C-III-2 選用學習工具的方法。 特學D-III-1 考試作答時間和順序的分配方法。 特學D-III-2 考試前後的學習活動。 特學D-III-3 解決或修正錯誤的方法。 特學D-III-4 記錄學習過程和結果的方法。 特學D-III-5 適合的作息時間表。`)
+                },
+                "IV": {
+                    performance: p(`特學1-IV-1 根據環境或學習訊息轉換注意力及調整專注時間。 特學1-IV-2 運用多元的記憶方法增進對學習內容的精熟度。 特學1-IV-3 重新組織及歸納學習內容。 特學1-IV-4 分析不同類型文章的架構。 特學1-IV-5 依據學習內容聯想並延伸相關知識。 特學1-IV-6 利用文本中的解釋說明，了解文意。 特學2-IV-1 表現積極的學習態度。 特學2-IV-2 自我肯定成功的學習經驗。 特學2-IV-3 檢視並建立合宜的學習信念。 特學3-IV-1 規劃自我的學習環境。 特學3-IV-2 運用多元工具解決學習問題。 特學4-IV-1 透過應試的結果分析學習成效。 特學4-IV-2 分析學習內容並調整學習方法。 特學4-IV-3 接納他人建議修正學習計畫。 特學4-IV-4 監控並記錄學習計畫執行過程。 特學4-IV-5 依據需求調整學習或作息時間。`),
+                    content: p(`特學A-IV-1 多元的學習環境或訊息。 特學A-IV-2 多元的記憶和組織方法。 特學A-IV-3 文章架構。 特學A-IV-4 學習內容的延伸聯想。 特學A-IV-5 教材中的輔助解釋、脈絡或關鍵字句。 特學B-IV-1 積極的學習態度。 特學B-IV-2 成功的學習經驗。 特學B-IV-3 學習信念的檢視和調整方法。 特學C-IV-1 學習環境的規劃內容。 特學C-IV-2 解決學習問題的多元工具。 特學D-IV-1 應試結果分析。 特學D-IV-2 學習計畫的分析和調整方式。 特學D-IV-3 學習計畫的執行紀錄。 特學D-IV-4 依需求規劃的作息時間表。`)
+                },
+                "V": {
+                    performance: p(`特學1-V-1 發展出適合自己的注意力策略。 特學1-V-2 發展出適合自己的記憶策略。 特學1-V-3 發展出適合自己的組織策略。 特學1-V-4 發展出適合自己的理解策略。 特學1-V-5 發展出適合自己的推理策略。 特學2-V-1 展現個人的優勢能力。 特學2-V-2 透過良好的學習行為追求自我實現。 特學3-V-1 營造自我的學習環境。 特學3-V-2 善用多元工具增進學習效能。 特學4-V-1 預測應試可能的命題內容，進行事前準備。 特學4-V-2 根據應試的結果，分析評估個人學習的優弱勢能力。 特學4-V-3 檢視學習過程及結果，主動修正學習計畫或策略。 特學4-V-4 安排自己的行事曆。 特學4-V-5 根據需要調整時間行程。`),
+                    content: p(`特學A-V-1 自我的注意力策略。 特學A-V-2 自我的記憶策略。 特學A-V-3 自我的組織策略。 特學A-V-4 自我的理解策略。 特學A-V-5 自我的推理策略。 特學B-V-1 展現優勢能力的方式。 特學B-V-2 達成自我實現的方法。 特學C-V-1 適切的學習環境調整方案。 特學C-V-2 增進學習效能的多元工具。 特學D-V-1 應試前的預測與分析。 特學D-V-2 學習優弱勢能力的分析。 特學D-V-3 修正學習計畫的參考依據。 特學D-V-4 自主規劃的行事曆。`)
+                }
+            },
+            "社會技巧": {
+                "I": {
+                    performance: p(`特社1-I-1 分辨與表達基本的正向或負向情緒。 特社1-I-2 藉由生理反應察覺及辨識壓力與情緒的反應。 特社1-I-3 學習面對可能遭遇的失敗。 特社1-I-4 察覺自己與他人對自己的看法或態度。 特社1-I-5 在遭逢不如意事件時，接受他人安慰並適當發洩情緒。 特社2-I-1 了解別人發出的訊息，是要我注意或是有事情要溝通。 特社2-I-2 了解人與人之間喜歡、親密與不喜歡、排斥的表現及差異。 特社2-I-3 適當使用口語、非口語或輔具與人溝通。 特社2-I-4 以身體動作適度表現出傾聽的態度。 特社2-I-5 依情境適當回答問題。 特社2-I-6 主動打招呼和自我介紹。 特社2-I-7 了解與人相處的情境、簡單規則，建立友善的關係。 特社2-I-8 分辨與表達衝突的原因、情境與後果。 特社2-I-9 避免爭鬥或危險的場合以保護自己。 特社2-I-10 在面對抱怨或拒絕情境時，維持心情的平穩。 特社2-I-11 在被他人誤解或誣賴時，主動尋求大人或同儕的協助。 特社2-I-12 與他人相處時，遵守基本的禮儀。 特社2-I-13 分辨與因應不適當的觸摸或語言，必要時主動尋求協助。 特社2-I-14 尊重他人的身體界限與自主權。 特社3-I-1 在課堂中持續傾聽他人說話。 特社3-I-2 依指示完成簡單的工作。 特社3-I-3 遇到困難時，等待時機求助。 特社3-I-4 以適當的身體動作或口語表達需求。 特社3-I-5 遵守教室規則。`),
+                    content: p(`特社A-I-1 基本情緒的認識與分辨。 特社A-I-2 壓力的察覺與面對。 特社A-I-3 自我優弱勢的察覺。 特社B-I-1 溝通訊息的意義。 特社B-I-2 溝通的媒介。 特社B-I-3 人際關係的建立。 特社B-I-4 衝突的原因及情境分析。 特社B-I-5 性別互動的基本禮儀。 特社C-I-1 學校規則的認識與遵守。 特社C-I-2 家庭成員互動的技巧。 特社C-I-3 社區成員互動的技巧。`)
+                },
+                "II": {
+                    performance: p(`特社1-II-1 嘗試因應與處理基本的情緒及壓力。 特社1-II-2 以實質的增強物自我激勵。 特社1-II-3 在成人的引導下擬訂解決問題的計畫。 特社1-II-4 嘗試使用策略解決問題並接納後果。 特社2-II-1 解讀他人口語與非口語溝通的情緒及目的。 特社2-II-2 主動引起話題，並禮貌地表達和傾聽他人的意見。 特社2-II-3 遵守團體規範，並依情境回應他人的邀請或主動加入團體。 特社2-II-4 分辨與採用適當的方式解決衝突，並能理性評估和接受衝突的後果。 特社2-II-5 無法執行他人的期待，以適當的方式回應困境。 特社2-II-6 了解性器官的隱私性及轉移觸摸的注意力。 特社2-II-7 與他人相處時，分辨安全或危險的情境與人物。`),
+                    content: p(`特社A-II-1 基本情緒的表達。 特社A-II-2 壓力源的評估與處理。 特社A-II-3 自我接納與激勵。 特社B-II-1 訊息解讀的技巧。 特社B-II-2 表達與傾聽的時機。 特社B-II-3 團體的基本規範。 特社B-II-4 衝突情境的因應。 特社B-II-5 危險情境的判別。`)
+                },
+                "III": {
+                    performance: p(`特社1-III-1 聽從建議選擇較佳的情緒處理技巧。 特社1-III-2 嘗試使用抒解壓力的方法。 特社1-III-3 接納自己與接受不可能每個人都喜歡自己的事實。 特社1-III-4 以各種形式自我安慰與獎勵。 特社2-III-1 以善意正向的觀點，看待與人相處的各種互動行為。 特社2-III-2 區辨別人非善意行為是提醒，還是威脅到了自己的適應與生存。 特社2-III-3 使用適當的技巧與人談話，並禮貌的結束話題。 特社2-III-4 依據情境，用適當的方式與他人分享自己喜歡的物品或生活經驗。 特社2-III-5 明瞭每個人都有獨特的地方，交友時不以單一標準或條件選擇。 特社2-III-6 展現合宜行為以維持長時間的友誼。 特社2-III-7 在無法接受個人或團體的要求時，禮貌地表示拒絕。`),
+                    content: p(`特社A-III-1 複雜情緒的處理。 特社A-III-2 壓力的替代與紓解方法。 特社A-III-3 行為與後果之間的關係與評估。 特社B-III-1 正負向訊息的判斷。 特社B-III-2 話題的開啟與延續。 特社B-III-3 自我經驗的分享。 特社B-III-4 自我需求與困難的表達。`)
+                },
+                "IV": {
+                    performance: p(`特社1-IV-1 分辨與表達矛盾的情緒。 特社1-IV-2 分析不同處理方式引發的行為後果。 特社1-IV-3 在面對壓力時，適當的調整情緒。 特社1-IV-4 聽從他人的建議，嘗試解決被拒絕的困境。 特社1-IV-5 從可行策略中，選擇適當的抒解壓力方式。 特社1-IV-6 分析失敗的原因，並從成功的經驗自我肯定。 特社1-IV-7 根據優弱勢能力，設定努力或學習的目標。 特社2-IV-1 運用科技媒體接收他人的訊息，以及解讀科技媒體訊息上的意義。 特社2-IV-2 區辨各種溝通訊息的情緒和意圖。 特社2-IV-3 正確解讀性別間傳遞的訊息。 特社2-IV-4 具備正確使用網路的基本法律常識。`),
+                    content: p(`特社A-IV-1 兩難情緒的處理。 特社A-IV-2 壓力的控制與調整。 特社A-IV-3 問題解決的技巧。 特社B-IV-1 科技媒體的運用。 特社B-IV-2 同理心的培養。 特社B-IV-3 優勢的呈現與表達。`)
+                },
+                "V": {
+                    performance: p(`特社1-V-1 根據情緒的情境或程度，適當的運用各種情緒，促進成長。 特社1-V-2 在面對壓力時有效處理自己的情緒。 特社1-V-3 主動尋求資源或策略以處理被拒絕的困境。 特社1-V-4 持續嘗試與使用有效的方式抒解壓力。 特社2-V-1 理解各種有趣及善意的訊息，讓自己快樂生活。 特社2-V-2 區辨與查證科技媒體訊息的真實性，不被誤導。 特社2-V-3 了解惡意欺騙或具有性侵害意圖的各種訊息。 特社2-V-4 用適當方式表達和接受不同的意見或評論。`),
+                    content: p(`特社A-V-1 強烈情緒的表達。 特社A-V-2 問題解決的外在資源。 特社A-V-3 正向思考的技巧。 特社B-V-1 訊息真偽與詐騙的防範。 特社B-V-2 同理他人的技巧。`)
+                }
+            },
+            "生活管理": {
+                "初階": {
+                    performance: p(`特生1-sP-1 覺察及表達如廁需求。 特生1-sP-2 使用適當的餐具進食。 特生1-sP-3 食用前進行洗滌、剝皮或打開包裝等。 特生1-sP-4 表現合宜的用餐禮儀與協助餐後整理。 特生1-sP-5 選擇乾淨新鮮且於保存期限內的食物。 特生1-sP-6 自我檢視並控制飲食行為和習慣。 特生1-sP-7 表達穿著衣物的不適感並請求更換。 特生1-sP-8 維持衣著整潔，並每日換洗貼身衣物。 特生1-sP-9 選擇適當場所並完成衣物穿脫與更換。 特生1-sP-10 視天氣、場合、年齡、個人喜好，選擇適合的衣著。 特生1-sP-11 分類衣物並收納保管。 特生1-sP-12 覺察及表達如廁需求。 特生2-sP-1 妥善保管個人財物並避免遺失。 特生2-sP-2 建立簡單的儲蓄行為。 特生2-sP-3 使用物品時表現節約與珍惜資源的態度和行為。 特生3-sP-1 獨立行動的能力。 特生3-sP-2 認識社區環境與資源。`),
+                    content: p(`特生A-sP-1 飲食需求的表達。 特生A-sP-2 進食技巧。 特生A-sP-3 餐具的辨認與選擇。 特生B-sP-1 衣物穿脫技巧。 特生B-sP-2 衣物的認識。 特生B-sP-3 衣物的清潔與收納。 特生C-sP-1 如廁技巧。 特生C-sP-2 如廁禮儀。 特生D-sP-1 身體器官與功能的認識。 特生E-sP-1 日常財物的使用與保管。 特生E-sP-2 金錢的概念。 特生F-sP-1 環境衛生的觀念。`)
+                },
+                "進階": {
+                    performance: p(`特生1-sA-1 烹調用具使用前後能清洗潔淨。 特生1-sA-2 使用適當方式加熱、沖泡、烹調簡易餐食。 特生1-sA-3 選擇適宜的用餐場所與安全的飲食行為。 特生1-sA-5 選購適合自己的衣物。 特生1-sA-6 使用適當方式洗濯及晾曬衣物。 特生1-sA-7 整理及收納個人衣物。 特生1-sA-9 適時修剪指甲與頭髮。 特生2-sA-1 具備儲蓄、使用塑膠貨幣及行動支付的技能。 特生2-sA-2 規劃日常生活的費用及收支管理事宜。 特生2-sA-3 落實資源回收與再利用。 特生3-sA-1 能處理自身所遇的意外事件。 特生3-sA-2 依需求善用社區資源。`),
+                    content: p(`特生A-sA-1 烹調用具的認識與使用。 特生A-sA-2 食物烹調前的處理。 特生A-sA-3 食物的選購。 特生B-sA-1 衣物選購。 特生B-sA-2 服裝禮儀。 特生C-sA-1 青春期的清潔衛生。 特生D-sA-1 青春期的身心健康。 特生E-sA-1 物品再利用的方式。 特生E-sA-2 金融機構的運用。 特生E-sA-3 個人預算、收支與管理。`)
+                }
+            },
+            "職業教育": {
+                "I": {
+                    performance: p(`特職1-I-1 描述家人的工作資訊。 特職1-I-2 認識社區中常見的職業。 特職2-I-1 簡要自我介紹。 特職2-I-2 表達喜歡的職業名稱。 特職3-I-1 依照物品特性完成指定工作。`),
+                    content: p(`特職A-I-1 工作資訊的認識與描述。 特職A-I-2 自我介紹。 特職B-I-1 基本工作安全規範的認識。`)
+                },
+                "II": {
+                    performance: p(`特職1-II-1 辨識常見的職業。 特職1-II-2 連結生活經驗與職業的關係。 特職2-II-1 填寫個人基本資料。 特職3-II-1 依照指令持續工作。 特職3-II-2 使用常用工具製作成品。`),
+                    content: p(`特職A-II-1 工作環境差異的辨識。 特職A-II-2 工作與生活經驗的關係。 特職B-II-1 常用工具的使用方式。`)
+                },
+                "III": {
+                    performance: p(`特職1-III-1 列舉常見職業名稱。 特職1-III-2 連結工作目的與個人生活的關係。 特職2-III-1 列舉求職準備工作。 特職3-III-1 表現移動與負重能力完成指定工作。`),
+                    content: p(`特職A-III-1 工作所需設備條件的認識。 特職A-III-2 工作目的與個人生活的關係。 特職B-III-1 物品的分類整理、裁剪裝訂或塑形。`)
+                },
+                "IV": {
+                    performance: p(`特職1-IV-1 列舉查詢工作資訊的管道。 特職1-IV-2 列舉常見職業所應具備的工作條件。 特職2-IV-1 查詢不同類型工作的基本條件。 特職3-IV-1 閱讀手冊進行操作工作。`),
+                    content: p(`特職A-IV-1 工作資訊與條件、進修管道的查詢方式。 特職A-IV-2 自我介紹的擬定與相關表件填寫方式。 特職B-IV-1 工作手冊的閱讀。`)
+                },
+                "V": {
+                    performance: p(`特職1-V-1 篩選適合自己的工作資訊。 特職1-V-2 查詢就業市場資訊。 特職2-V-1 撰寫個人履歷，演練面試技巧。 特職3-V-1 正確完成複雜的工作。`),
+                    content: p(`特職A-V-1 工作資訊的查詢與篩選。 特職A-V-2 求職陷阱的辨識。 特職B-V-1 職場禮儀與敬業精神。`)
+                }
+            },
+            "溝通訓練": {
+                "初階": {
+                    performance: p(`特溝1-sP-1 覺察、分辨與理解聲音。 特溝1-sP-2 覺察、分辨各種溝通訊息。 特溝1-sP-3 專注於溝通者的聲音、唇型、動作手勢與表情。 特溝1-sP-4 了解日常的溝通訊息。 特溝2-sP-1 發展出個人適切的溝通形式。 特溝2-sP-2 發出清楚明確的訊息。 特溝3-sP-1 表達參與活動的意圖。 特溝3-sP-2 視情境主動回應他人。`),
+                    content: p(`特溝A-sP-1 眼神注視。 特溝A-sP-2 動作、手勢與表情的模仿。 特溝B-sP-1 符合個人口語需求之輔具選用。 特溝B-sP-2 構音、音量及說話節奏。 特溝C-sP-1 手語的空間位置、手形、方向、動作及表情。`)
+                },
+                "進階": {
+                    performance: p(`特溝1-sA-1 注意及分辨溝通情境中的多重訊息。 特溝1-sA-2 解讀較長或複雜的訊息內容。 特溝2-sA-1 結合不同的溝通形式進行表達。 特溝2-sA-2 依情境需求調整適切的溝通形式。 特溝3-sA-1 依情境進行持續的對話輪替。 特溝4-sA-1 就與人合作的內容進行溝通協調。`),
+                    content: p(`特溝A-sA-1 傳達情緒感受的手勢及肢體動作。 特溝B-sA-1 符合語法的複雜句型。 特溝B-sA-2 敘事的技巧。 特溝C-sA-1 符合手語語法的複雜句型。`)
+                }
+            },
+            "定向行動": {
+                "初階": {
+                    performance: p(`特定1-sP-1 能透過光、影區辨不同的環境空間。 特定1-sP-2 能區辨環境中的各種聲音。 特定1-sP-4 能用手區辨各種不同的材質。 特定2-sP-1 有效分析環境中行動所需要的資訊。 特定2-sP-2 應用各種行動技能與輔助科技在日常生活環境中獨立行走。`),
+                    content: p(`特定A-sP-1 聽覺的訓練。 特定A-sP-2 觸覺的訓練。 特定B-sP-1 形狀的觸知覺。 特定B-sP-2 空間大小的迴聲知覺。 特定C-sP-1 多感官知覺定向模式訓練。`)
+                },
+                "進階": {
+                    performance: p(`特定1-sA-1 了解自身在環境中所處位置。 特定1-sA-2 運用環境中各種不同的訊息建構心理地圖。 特定2-sA-1 有效分析預定到達的地點所需要的交通資訊。 特定2-sA-2 運用科技輔具的資訊規劃路線與行程。`),
+                    content: p(`特定B-sA-1 知覺概念的統整。 特定B-sA-2 路徑的規劃。 特定C-sA-1 餐點、日用品等的擺放位置。`)
+                }
+            },
+            "輔助科技應用": {
+                "不分階段": {
+                    performance: p(`特輔1-1 了解所需使用輔具的功能。 特輔1-2 認識所需使用輔具的構造。 特輔2-1 正向看待輔具的使用。 特輔2-2 選擇適宜需求的輔具。 特輔3-1 在協助下操作所使用的輔具。 特輔3-2 獨立操作所使用的輔具。 特輔4-1 維護所使用輔具的功能。`),
+                    content: p(`特輔A-1 放大鏡功能與操作。 特輔A-2 望遠鏡功能與操作。 特輔A-3 擴視機功能與操作。 特輔B-1 助聽器功能與操作。 特輔B-2 人工電子耳功能與操作。 特輔C-1 柺杖功能與操作。 特輔C-2 助行器功能與操作。 特輔D-1 有聲書功能與操作。 特輔E-1 溝通圖卡功能與操作。 特輔F-1 替代性鍵盤或滑鼠功能與操作。`)
+                }
+            },
+            "功能性動作訓練": {
+                "初階": {
+                    performance: p(`特功1-1 具備四肢與軀幹的關節活動能力。 特功2-1 具備維持身體姿勢技能。 特功2-2 具備改變身體姿勢技能。 特功2-3 具備移位技能。 特功2-4 具備移動技能。 特功2-7 具備手部精細操作技能。 特功2-8 具備雙側協調與眼手協調技能。`),
+                    content: p(`特功A-1 左/右上肢的關節活動。 特功A-2 左/右下肢的關節活動。 特功B-1 頭頸直立姿勢的維持。 特功C-1 翻身。 特功D-1 躺臥下的身體挪動。 特功E-1 連續翻身。 特功H-1 物品的抓握或放開。 特功I-1 雙手持物。`)
+                },
+                "進階": {
+                    performance: p(`特功1-2 精進日常生活動作協調性。 特功2-11 展現動態平衡與重心調整能力。`),
+                    content: p(`特功A-4 軀幹與骨盆的動態協調。 特功B-11 坐姿平衡的進階挑戰。`)
+                }
+            },
+            "點字": {
+                "初階": {
+                    performance: p(`特點1-sP-1 認識點寫點字系統。 特點1-sP-2 運用點字系統點寫筆記。 特點2-sP-1 正確且熟練摸讀點字系統。`),
+                    content: p(`特點B-sP-3 手指輕觸動作。 特點C-sP-1 注音符號點字系統符號的點寫與摸讀。`)
+                },
+                "進階": {
+                    performance: p(`特點2-sA-1 精熟高難度數理點字記號摸讀。`),
+                    content: p(`特點C-sA-6 英文及特殊數理點字符號統整。`)
+                }
+            }
+        };
+
+        let cart = [];
+
+        function openIndicatorModal() {
+            document.getElementById('indicatorModal').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+            
+            const currentDomainInput = document.getElementById('domainName').value;
+            const filterDomainEl = document.getElementById('filterDomain');
+            for (let i = 0; i < filterDomainEl.options.length; i++) {
+                if (currentDomainInput.includes(filterDomainEl.options[i].value)) {
+                    filterDomainEl.selectedIndex = i;
+                    break;
+                }
+            }
+            updateStageOptions();
+        }
+
+        function closeIndicatorModal() {
+            document.getElementById('indicatorModal').classList.add('hidden');
+            document.body.style.overflow = 'auto';
+        }
+
+        function updateStageOptions() {
+            const domain = document.getElementById('filterDomain').value;
+            const stageSelect = document.getElementById('filterStage');
+            document.getElementById('modalDomainTitle').innerText = domain;
+            stageSelect.innerHTML = ''; 
+
+            const twoStages = ['生活管理', '定向行動', '功能性動作訓練', '點字', '溝通訓練'];
+            const noStages = ['輔助科技應用'];
+
+            if (twoStages.includes(domain)) {
+                stageSelect.innerHTML = `<option value="初階">初階 (sP / 基礎)</option><option value="進階">進階 (sA / 進階)</option>`;
+            } else if (noStages.includes(domain)) {
+                stageSelect.innerHTML = `<option value="不分階段">不分學習階段</option>`;
+            } else {
+                stageSelect.innerHTML = `
+                    <option value="I">第一階段 (國小1-2年級)</option>
+                    <option value="II">第二階段 (國小3-4年級)</option>
+                    <option value="III">第三階段 (國小5-6年級)</option>
+                    <option value="IV">第四階段 (國中7-9年級)</option>
+                    <option value="V">第五階段 (高中10-12年級)</option>
+                `;
+            }
+            renderIndicators(); 
+        }
+
+        function renderIndicators() {
+            const domain = document.getElementById('filterDomain').value;
+            const stage = document.getElementById('filterStage').value;
+            const query = document.getElementById('keywordSearch').value.trim();
+
+            const pList = document.getElementById('performanceList');
+            const cList = document.getElementById('contentList');
+            pList.innerHTML = ''; 
+            cList.innerHTML = '';
+
+            const data = curriculumData[domain]?.[stage];
+
+            if (!data || (data.performance.length === 0 && data.content.length === 0)) {
+                pList.innerHTML = `<p class="text-slate-400 font-bold p-4 text-center w-full col-span-2">💡 目前選擇的階段無預載指標，您可以嘗試在其他領域或階段進行關鍵字檢索。</p>`;
+                document.getElementById('perfCount').innerText = '0 筆';
+                document.getElementById('contentCount').innerText = '0 筆';
+                return;
+            }
+
+            let perfMatched = 0;
+            data.performance.forEach(item => {
+                if (query && !item.id.includes(query) && !item.text.includes(query) && !item.theme.includes(query)) return;
+                perfMatched++;
+                pList.appendChild(createIndicatorCard(item, domain, '學習表現', query));
+            });
+
+            let contentMatched = 0;
+            data.content.forEach(item => {
+                if (query && !item.id.includes(query) && !item.text.includes(query) && !item.theme.includes(query)) return;
+                contentMatched++;
+                cList.appendChild(createIndicatorCard(item, domain, '學習內容', query));
+            });
+
+            document.getElementById('perfCount').innerText = `${perfMatched} 筆`;
+            document.getElementById('contentCount').innerText = `${contentMatched} 筆`;
+
+            if (perfMatched === 0 && contentMatched === 0 && query) {
+                pList.innerHTML = `<p class="text-slate-400 font-bold p-4 text-center w-full">找不到符合「${query}」的課綱項目。</p>`;
+            }
+        }
+
+        function createIndicatorCard(item, domain, type, query) {
+            const card = document.createElement('label');
+            card.className = 'curriculum-card animate-fade-in';
+            const isChecked = cart.some(c => c.id === item.id);
+
+            let displayText = item.text;
+            let displayTheme = item.theme ? `[${item.theme}] ` : '';
+
+            if (query) {
+                const regex = new RegExp(`(${query})`, 'gi');
+                displayText = displayText.replace(regex, `<span class="highlight">$1</span>`);
+                if (displayTheme) displayTheme = displayTheme.replace(regex, `<span class="highlight">$1</span>`);
+            }
+
+            const themeBadge = displayTheme ? `<span class="text-indigo-600 font-black mr-1">${displayTheme}</span>` : '';
+
+            card.innerHTML = `
+                <input type="checkbox" ${isChecked ? 'checked' : ''} onchange="toggleIndicator('${item.id}', '${domain}', '${type}')">
+                <div class="flex-grow">
+                    <div class="text-[11px] font-black text-blue-500 mb-0.5">${item.id}</div>
+                    <div class="text-slate-700 font-bold text-xs leading-relaxed">${themeBadge}${displayText}</div>
+                </div>
+            `;
+            return card;
+        }
+
+        function findItemById(id) {
+            for (const dom in curriculumData) {
+                for (const stg in curriculumData[dom]) {
+                    let item = curriculumData[dom][stg].performance.find(x => x.id === id);
+                    if (item) return item;
+                    item = curriculumData[dom][stg].content.find(x => x.id === id);
+                    if (item) return item;
+                }
+            }
+            return null;
+        }
+
+        function toggleIndicator(id, domain, type) {
+            const idx = cart.findIndex(c => c.id === id);
+            if (idx > -1) {
+                cart.splice(idx, 1);
+            } else {
+                const item = findItemById(id);
+                if (item) {
+                    cart.push({ ...item, domain, type });
+                }
+            }
+            updateCartUI();
+        }
+
+        function updateCartUI() {
+            const countBadge = document.getElementById('cartCountBadge');
+            const emptyState = document.getElementById('cartEmptyState');
+            const itemsContainer = document.getElementById('cartItemsContainer');
+
+            countBadge.innerText = `已選 ${cart.length} 項`;
+
+            if (cart.length === 0) {
+                emptyState.classList.remove('hidden');
+                itemsContainer.classList.add('hidden');
+                itemsContainer.innerHTML = '';
+            } else {
+                emptyState.classList.add('hidden');
+                itemsContainer.classList.remove('hidden');
+                itemsContainer.innerHTML = '';
+
+                cart.forEach((item) => {
+                    const itemDiv = document.createElement('div');
+                    itemDiv.className = 'flex justify-between items-start p-2.5 bg-slate-50 border border-slate-200 rounded-lg gap-2 hover:bg-slate-100 transition-colors duration-150 animate-fade-in';
+                    itemDiv.innerHTML = `
+                        <div class="flex-grow">
+                            <div class="text-[10px] font-black text-slate-400">${item.id} | ${item.type}</div>
+                            <p class="text-slate-700 font-bold text-xs mt-0.5">${item.theme ? `[${item.theme}] ` : ''}${item.text}</p>
+                        </div>
+                        <button onclick="removeFromCart('${item.id}')" class="text-slate-400 hover:text-red-500 font-black text-lg px-1 leading-none" title="移除">&times;</button>
+                    `;
+                    itemsContainer.appendChild(itemDiv);
+                });
+            }
+
+            const checkboxes = document.querySelectorAll('#performanceList input[type="checkbox"], #contentList input[type="checkbox"]');
+            checkboxes.forEach(cb => {
+                const parentLabel = cb.closest('.curriculum-card');
+                if (parentLabel) {
+                    const idDiv = parentLabel.querySelector('div div');
+                    if (idDiv) {
+                        const id = idDiv.innerText.split(' ')[0];
+                        cb.checked = cart.some(c => c.id === id);
+                    }
+                }
+            });
+        }
+
+        function removeFromCart(id) {
+            const idx = cart.findIndex(c => c.id === id);
+            if (idx > -1) {
+                cart.splice(idx, 1);
+                updateCartUI();
+                showToast('已移除該項指標 🗑️');
+            }
+        }
+
+        async function clearCart() {
+            if (cart.length === 0) return;
+            const yes = await customConfirm('確定要清空指標收集箱中所有的選取項目嗎？', '清空收集箱');
+            if (yes) {
+                cart = [];
+                updateCartUI();
+                showToast('已清空收集箱 🧹');
+            }
+        }
+
+        async function applyToPrompt() {
+            if (cart.length === 0) {
+                await customAlert('收集箱目前無任何項目，請先在左側勾選指標！', '收集箱是空的');
+                return;
+            }
+
+            let textToAdd = "";
+            cart.forEach(item => {
+                textToAdd += `${item.id} ${item.text}\n`;
+            });
+
+            const promptEl = document.getElementById('curriculumPrompt');
+            if (promptEl.value.trim() !== "") {
+                promptEl.value += "\n\n";
+            }
+            promptEl.value += textToAdd.trim();
+            
+            promptEl.classList.add('ring-4', 'ring-emerald-400');
+            setTimeout(() => promptEl.classList.remove('ring-4', 'ring-emerald-400'), 1000);
+
+            showToast('✅ 已成功將指標貼入您的教學構想中！');
+            closeIndicatorModal();
+        }
+
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.innerText = msg; 
+            t.classList.remove('hidden', 'opacity-0');
+            t.classList.add('opacity-100');
+            setTimeout(() => {
+                t.classList.remove('opacity-100');
+                t.classList.add('opacity-0');
+                setTimeout(() => t.classList.add('hidden'), 300);
+            }, 2500);
+        }
+
+        document.getElementById('kittyIcon').addEventListener('click', () => {
+            const isPink = document.body.classList.toggle('pink-mode');
+            const dialogBorder = document.getElementById('dialogBorder');
+            const headerTitle = document.getElementById('headerTitle');
+            
+            if (isPink) {
+                dialogBorder.classList.remove('border-indigo-600');
+                dialogBorder.classList.add('border-pink-500');
+                headerTitle.innerText = "🌸南投特殊需求課程計畫產生器 🌸";
+                showToast('🎀 喵！您開啟了隱藏的 Hello Kitty 夢幻粉紅主題！備課好心情 🐾💖');
+            } else {
+                dialogBorder.classList.remove('border-pink-500');
+                dialogBorder.classList.add('border-indigo-600');
+                headerTitle.innerText = "南投特殊需求課程計畫產生器";
+                showToast('🐾 已恢復為經典靛藍專業主題！');
+            }
+        });
+    </script>
+</body>
+</html>
